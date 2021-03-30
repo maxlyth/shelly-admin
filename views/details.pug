@@ -1,0 +1,26 @@
+block content
+  div.container-fluid.h-100.px-0
+    div.row
+      div.col-2
+        img(src='images/shelly-devices/shelly1L.png', width='100%', style="'object-fit': 'cover'")
+      div.col-5
+        each value, key in { 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'lastSeen': 'Last seen:'}
+          div.row
+            div.col-4
+              p= value
+            div.col-8
+              p= shelly[key]
+      div.col-5
+        each value, key in { 'enable': 'MQTT Enabled', 'server': 'MQTT Server', 'user': 'MQTT User', 'clean_session': 'MQTT Clean session', 'keep_alive': 'MQTT Keep alive', 'max_qos': 'MQTT QoS', 'retain': 'MQTT Retain', 'update_period': 'MQTT Update period', 'reconnect_timeout_min': 'MQTT Min reconnect t/o', 'reconnect_timeout_max': 'MQTT Max reconnect t/o'}
+          div.row
+            div.col-4
+              p= value
+            div.col-8
+              p= shelly.settings.mqtt[key]
+    div.row
+      div.col-12
+        div.row.overflow-auto(style={'overflow-y': scroll})
+          div.col-12(style={'font-size': '11px', 'line-height': '1.0'})
+            code= JSON.stringify(shelly.settings)
+
+

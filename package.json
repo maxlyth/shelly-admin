@@ -1,0 +1,34 @@
+{
+  "name": "shelly-admin",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.9.1",
+    "bootstrap4": "^0.0.1-security",
+    "compression": "^1.7.4",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "express-sse": "^0.5.3",
+    "flatted": "^3.1.1",
+    "http-errors": "~1.6.3",
+    "javascript-time-ago": "^2.3.4",
+    "joi": "^17.4.0",
+    "lodash": "^4.17.21",
+    "morgan": "^1.10.0",
+    "pug": "^2.0.0-beta11",
+    "shellies": "^1.5.0",
+    "split-grid": "^1.0.9",
+    "underscore": "^1.12.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.23.0",
+    "eslint-plugin-lodash
+    ": "^7.2.0",
+    "nodemon": "^2.0.7"
+  }
+}

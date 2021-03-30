@@ -1,0 +1,49 @@
+extends layout
+
+block scripts
+  link(rel='stylesheet', type='text/css', href='datatables/Bootstrap-4-4.1.1/css/bootstrap.css')
+  link(rel='stylesheet', type='text/css', href='datatables/DataTables-1.10.24/css/dataTables.bootstrap4.css')
+  link(rel='stylesheet', type='text/css', href='datatables/Buttons-1.7.0/css/buttons.bootstrap4.css')
+  link(rel='stylesheet', type='text/css', href='datatables/ColReorder-1.5.3/css/colReorder.bootstrap4.css')
+  link(rel='stylesheet', type='text/css', href='datatables/FixedHeader-3.1.8/css/fixedHeader.bootstrap4.css')
+  link(rel='stylesheet', type='text/css', href='datatables/Responsive-2.2.7/css/responsive.bootstrap4.css')
+  link(rel='stylesheet', type='text/css', href='datatables/Select-1.3.3/css/select.bootstrap4.css')
+  script(src='lodash/4.17.15-npm/lodash.js')
+  script(src='datatables/jQuery-3.3.1/jquery-3.3.1.js')
+  script(src='datatables/Bootstrap-4-4.1.1/js/bootstrap.js')
+  script(src='datatables/DataTables-1.10.24/js/jquery.dataTables.js')
+  script(src='datatables/DataTables-1.10.24/js/dataTables.bootstrap4.js')
+  script(src='datatables/Buttons-1.7.0/js/dataTables.buttons.js')
+  script(src='datatables/Buttons-1.7.0/js/buttons.bootstrap4.js')
+  script(src='datatables/Buttons-1.7.0/js/buttons.colVis.js')
+  script(src='datatables/ColReorder-1.5.3/js/dataTables.colReorder.js')
+  script(src='datatables/FixedHeader-3.1.8/js/dataTables.fixedHeader.js')
+  script(src='datatables/Responsive-2.2.7/js/dataTables.responsive.js')
+  script(src='datatables/Select-1.3.3/js/dataTables.select.js')
+  script(src='datatables/Plugins-1.10.24/sorting/ip-address.js')
+  script(src='datatables/Plugins-1.10.24/sorting/natural-time-delta.js')
+  script(src='datatables/Plugins-1.10.24/dataRender/hyperLink.js')
+  script(src='datatables/Plugins-1.10.24/dataRender/intl.js')
+  script(src='https://unpkg.com/split.js/dist/split.min.js')
+  script(src='javascripts/index_inc.js')
+
+block content
+  div.container-fluid.px-0.h-100.bg-dark.text-white
+    nav.navbar.navbar-dark.bg-primary
+      a.navbar-brand ShellyAdmin
+      form.form-inline
+        input#mySearch.form-control.mr-sm-2(type="search", placeholder="Search")
+        button.btn.btn-success.my-2.my-sm-0(type="submit") Search
+    div#shellylist.container-fluid.h-50.table-responsive
+      div.row.overflow-auto(style={'overflow-y': scroll})
+        div.col-12
+          table#shellies.table.table-striped.table-sm.table-dark.table-borderless.table-hover(style={'width': '100%'})
+    div.container-fluid.h-25
+      div.card.text-white.my-.h-100
+        div.card-header.bg-primary Shelly details
+        div.card-body.bg-dark.table-responsive
+          div#details
+    div.container-fluid.hidden
+      div.row(style={'max-height': '120px'})
+        div.col-12
+          h5: div#events
