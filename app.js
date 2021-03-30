@@ -33,7 +33,6 @@ var sse = new SSE();
 
 var indexRouter = require('./routes/index');
 var apiRouter = require('./routes/api');
-var detailsRouter = require('./routes/details');
 var testRouter = require('./routes/test');
 
 var shellycoaplist = {};
@@ -58,10 +57,10 @@ function shellyExtract(device) {
 
 function processStatus(device, newStatus) {
   var devicekey = deviceKey(device.type, device.id);
-  var loclist = shellylist;
   //console.log('Received new polled status for ', devicekey);
   var existingCoAPDevice = shellycoaplist[devicekey];
-  if (existingCoAPDevice === null || existingCoAPDevice === undefined) {
+
+  if (_.isNil(existingCoAPDevice)) {
     console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating status');
     shellycoaplist[devicekey] = device;
   }
@@ -81,7 +80,7 @@ function processStatus(device, newStatus) {
 }
 function pollStatus(device) {
   try {
-    if (typeof device.getStatus === 'function') {
+    if (_.isFunction(device.getStatus)) {
       device.getStatus().then((newStatus) => {
         try {
           processStatus(device, newStatus);
@@ -95,10 +94,9 @@ function pollStatus(device) {
 
 function processSettings(device, newSettings) {
   var devicekey = deviceKey(device.type, device.id);
-  var loclist = shellylist;
   //console.log('Received new polled settings for ', devicekey);
   var existingCoAPDevice = shellycoaplist[devicekey];
-  if (existingCoAPDevice === null || existingCoAPDevice === undefined) {
+  if (_.isNil(existingCoAPDevice)) {
     console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating settings');
     shellycoaplist[devicekey] = device;
   }
@@ -120,7 +118,7 @@ function processSettings(device, newSettings) {
 }
 function pollSettings(device) {
   try {
-    if (typeof device.getSettings === 'function') {
+    if (_.isFunction(device.getSettings)) {
       device.getSettings().then((newSettings) => {
         try {
           processSettings(device, newSettings);
@@ -185,7 +183,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/api', apiRouter);
 app.use('/test', testRouter);
-app.use('/details', detailsRouter);
 app.get('/events', sse.init);
 
 // catch 404 and forward to error handler

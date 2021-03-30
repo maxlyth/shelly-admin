@@ -62,13 +62,12 @@ block content
             form
               .form-group
                 label.col-form-label(for='recipient-name') Shelly Device discovery:
-                    .form-check
-                      input#discoverViaCoAP.form-check-input(type="checkbox", name="")
-                      label.form-check-label(for='discoverViaCoAP') Use CoAP:
-                  .form-group
-                    .form-check
-                      input#discoverViaCoAP.form-check-input(type="checkbox", name="")
-                      label.form-check-label(for='discoverViaCoAP') Use CoAP:
+                  .form-check
+                    input#discoverViaCoAP.form-check-input(type="checkbox", name="")
+                    label.form-check-label(for='discoverViaCoAP') Use CoAP:
+                  .form-check
+                    input#discoverViaMQTT.form-check-input(type="checkbox", name="")
+                    label.form-check-label(for='discoverViaMQTT') Use MQTT:
                   .form-check
                     input#discoverViaIP.form-check-input(type="checkbox", name="")
                     label.form-check-label(for='discoverViaIP') Use IP Scan:

@@ -2,7 +2,7 @@ block content
   div.container-fluid.h-100.px-0
     div.row
       div.col-2
-        img(src='images/shelly-devices/shelly1L.png', width='100%', style="'object-fit': 'cover'")
+        img(src='images/shelly-devices/'+imageName, width='100%', style="'object-fit': 'cover'")
       div.col-5
         each value, key in { 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'lastSeen': 'Last seen:'}
           div.row
