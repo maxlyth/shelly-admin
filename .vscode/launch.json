@@ -5,6 +5,27 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "node",
+      "request": "attach",
+      "name": "Node: Nodemon",
+      "processId": "${command:PickProcess}",
+      "restart": true,
+      "protocol": "inspector",
+    },
+    {
+      "name": "Launch localhost",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000/test/index.html",
+      "webRoot": "${workspaceFolder}/wwwroot"
+    },
+    {
+      "name": "Launch index.html",
+      "type": "chrome",
+      "request": "launch",
+      "file": "${workspaceFolder}/index.html"
+    },
+    {
       "name": "Launch via NPM",
       "request": "launch",
       "runtimeArgs": [
