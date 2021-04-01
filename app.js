@@ -4,40 +4,40 @@
 /* eslint no-unused-vars: ["error", { "args": "none" }]*/
 /* eslint-disable lodash/prefer-lodash-method */
 
-var createError = require('http-errors');
-var compression = require('compression');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var shellies = require('shellies')
-var _ = require('lodash');
+const _ = require('lodash');
+const path = require('path');
+const createError = require('http-errors');
+const cookieParser = require('cookie-parser');
+const compression = require('compression');
+const express = require('express');
+const SSE = require('express-sse');
+const morgan = require('morgan');
 const TimeAgo = require('javascript-time-ago');
 const en = require('javascript-time-ago/locale/en');
-TimeAgo.addDefaultLocale(en);
-const timeAgo = new TimeAgo('en-GB')
+const shellies = require('shellies')
 
-var app = express();
-app.use(compression({ filter: shouldCompress }))
-function shouldCompress(req, res) {
-  if (req.headers['x-no-compression']) {
-    // don't compress responses with this request header
-    return false
-  }
-  // fallback to standard filter function
-  return compression.filter(req, res)
-}
+const indexRouter = require('./routes/index');
+const apiRouter = require('./routes/api');
+const testRouter = require('./routes/test');
 
-var SSE = require('express-sse');
-var sse = new SSE();
-
-var indexRouter = require('./routes/index');
-var apiRouter = require('./routes/api');
-var testRouter = require('./routes/test');
-
+const app = express();
+const sse = new SSE();
 var shellycoaplist = {};
 var shellylist = {};
+
+// Setup some Express globals we will need in templates and view handlers
+/*
+Consider switching to middleware locals rather than app globals. eg:
+app.use(function(req, res, next){
+  res.locals._ = require('underscore');
+  next();
+});
+*/
 app.locals.shellylist = shellylist;
+app.locals._ = _;
+
+TimeAgo.addDefaultLocale(en);
+const timeAgo = new TimeAgo('en-GB')
 
 const deviceKey = (type, id) => `${type}#${id}`;
 
@@ -55,117 +55,132 @@ function shellyExtract(device) {
   }
 }
 
-function processStatus(device, newStatus) {
-  var devicekey = deviceKey(device.type, device.id);
-  //console.log('Received new polled status for ', devicekey);
-  var existingCoAPDevice = shellycoaplist[devicekey];
 
-  if (_.isNil(existingCoAPDevice)) {
-    console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating status');
-    shellycoaplist[devicekey] = device;
-  }
-  //var existingDevice = _.find(shellylist, function (o) { return o.devicekey === devicekey; });
-  var existingDevice = shellylist[devicekey];
-  if (existingDevice) {
-    existingDevice = _.merge(existingDevice, shellyExtract(device));
-    existingDevice.status = newStatus;
-    existingDevice.mqtt_connected = newStatus.mqtt.connected;
-    existingDevice.rssi = newStatus.wifi_sta.rssi;
-  } else {
-    console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating status');
-    existingDevice = shellyExtract(device);
-  }
-  shellylist[devicekey] = existingDevice;
-  sse.send(existingDevice, 'shellyUpdate');
-}
 function pollStatus(device) {
-  try {
-    if (_.isFunction(device.getStatus)) {
-      device.getStatus().then((newStatus) => {
-        try {
-          processStatus(device, newStatus);
-        } catch (err) { console.log('*********ERROR*********: ', err.message, ' while processStatus'); }
-      });
-    } else {
-      console.log('getStatus failed because the object does not have that function');
+  function processStatus(device, newStatus) {
+    const devicekey = deviceKey(device.type, device.id);
+    //console.log('Received new polled status for ', devicekey);
+
+    const existingCoAPDevice = shellycoaplist[devicekey];
+    if (_.isNil(existingCoAPDevice)) {
+      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating status');
+      return;
     }
-  } catch (err) { console.log('*********ERROR*********: ', err.message, ' uncaught in pollStatus'); }
+    const existingDevice = shellylist[devicekey];
+    if (_.isNil(existingDevice)) {
+      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating status');
+      return;
+    }
+    let newExtraction = shellyExtract(device);
+    newExtraction.status = newStatus;
+    newExtraction.mqtt_connected = newStatus.mqtt.connected;
+    newExtraction.rssi = newStatus.wifi_sta.rssi;
+    newExtraction = _.merge(existingDevice, newExtraction);
+    const differences = _.difference(shellylist[devicekey], newExtraction);
+    if (differences.length === 0) {
+      //console.log('Found ZERO differences when updating status. Ignoring SSE event');
+      return;
+    }
+    console.log('Found DIFFERENCES', differences, 'when updating status so sending SSE event');
+    shellylist[devicekey] = newExtraction;
+    sse.send(newExtraction, 'shellyUpdate');
+  }
+  try {
+    device.getStatus?.().then((newStatus) => {
+      try {
+        processStatus(device, newStatus);
+      } catch (err) { console.error('*********ERROR*********: ', err.message, ' while processStatus'); }
+    });
+  } catch (err) { console.error('*********ERROR*********: ', err.message, ' uncaught in pollStatus'); }
+  return Math.round(Math.random() * (20000)) + 50000;
+}
+function pollStatusTimer() {
+  const nextPollInterval = pollStatus(this.device);
+  setTimeout(pollStatusTimer.bind({ device: this.device }), nextPollInterval);
 }
 
-function processSettings(device, newSettings) {
-  var devicekey = deviceKey(device.type, device.id);
-  //console.log('Received new polled settings for ', devicekey);
-  var existingCoAPDevice = shellycoaplist[devicekey];
-  if (_.isNil(existingCoAPDevice)) {
-    console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating settings');
-    shellycoaplist[devicekey] = device;
-  }
-  //  var existingDevice = _.find(shellylist, function (o) { return o.devicekey === devicekey; });
-  var existingDevice = shellylist[devicekey];
-  if (existingDevice) {
-    existingDevice = _.merge(existingDevice, shellyExtract(device));
-    existingDevice.settings = newSettings;
-    existingDevice.fw = newSettings.fw;
-    existingDevice.givenname = newSettings.name;
-    existingDevice.ssid = newSettings.wifi_sta.ssid;
-    existingDevice.mqtt_enable = newSettings.mqtt.enable;
-  } else {
-    console.log('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating settings');
-    existingDevice = shellyExtract(device);
-  }
-  shellylist[devicekey] = existingDevice;
-  sse.send(existingDevice, 'shellyUpdate');
-}
+
 function pollSettings(device) {
-  try {
-    if (_.isFunction(device.getSettings)) {
-      device.getSettings().then((newSettings) => {
-        try {
-          processSettings(device, newSettings);
-        } catch (err) { console.log('*********ERROR*********: ', err.message, ' while processSettings'); }
-      });
-    } else {
-      console.log('getSettings failed because the object does not have that function');
+  function processSettings(device, newSettings) {
+    const devicekey = deviceKey(device.type, device.id);
+    //console.log('Received new polled settings for ', devicekey);
+    const existingCoAPDevice = shellycoaplist[devicekey];
+    if (_.isNil(existingCoAPDevice)) {
+      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating settings');
+      return;
     }
-  } catch (err) { console.log('*********ERROR*********: ', err.message, ' uncaught in pollStatus'); }
+    //  var existingDevice = _.find(shellylist, function (o) { return o.devicekey === devicekey; });
+    const existingDevice = shellylist[devicekey];
+    if (_.isNil(existingDevice)) {
+      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating settings');
+      return;
+    }
+    let newExtraction = shellyExtract(device);
+    newExtraction.settings = newSettings;
+    newExtraction.fw = newSettings.fw;
+    newExtraction.givenname = newSettings.name;
+    newExtraction.ssid = newSettings.wifi_sta.ssid;
+    newExtraction.mqtt_enable = newSettings.mqtt.enable;
+    newExtraction = _.merge(existingDevice, newExtraction);
+    const differences = _.difference(shellylist[devicekey], newExtraction);
+    if (differences.length === 0) {
+      //console.log('Found ZERO differences when updating settings. Ignoring SSE event');
+      return;
+    }
+    console.log('Found DIFFERENCES', differences, 'when updating settings so sendding SSE event');
+    shellylist[devicekey] = newExtraction;
+    sse.send(newExtraction, 'shellyUpdate');
+  }
+  try {
+    device.getSettings?.().then((newSettings) => {
+      try {
+        processSettings(device, newSettings);
+      } catch (err) { console.error('*********ERROR*********: ', err.message, ' while processSettings'); }
+    });
+  } catch (err) { console.error('*********ERROR*********: ', err.message, ' uncaught in pollSettings'); }
+  return Math.round(Math.random() * (20000)) + 50000;
 }
+function pollSettingsTimer() {
+  const nextPollInterval = pollSettings(this.device);
+  setTimeout(pollSettingsTimer.bind({ device: this.device }), nextPollInterval);
+}
+
 
 shellies.on('discover', device => {
   // a new device has been discovered
   console.log('Discovered device with ID', device.id, 'and type', device.type);
-  var devicekey = deviceKey(device.type, device.id);
+  const devicekey = deviceKey(device.type, device.id);
   shellycoaplist[devicekey] = device;
   shellylist[devicekey] = shellyExtract(device);
-  pollSettings(device);
-  pollStatus(device);
-  setInterval(pollSettings, 30000, device);
-  setInterval(pollStatus, 30000, device);
+  setTimeout(pollSettingsTimer.bind({ device: device }), Math.round(Math.random() * (2500)) + 500);
+  setTimeout(pollStatusTimer.bind({ device: device }), Math.round(Math.random() * (2500)) + 500);
 
   device.on('change', (prop, newValue, oldValue) => {
     // a property on the device has changed
-    console.log(prop, 'changed from', oldValue, 'to', newValue);
-    var devicekey = deviceKey(device.type, device.id);
+    const devicekey = deviceKey(device.type, device.id);
     var extractedData = shellylist[devicekey];
     try {
       extractedData.prop = prop;
       extractedData.oldValue = oldValue;
       extractedData.newValue = newValue;
       sse.send(extractedData, 'shellyUpdate');
-    } catch (err) { console.log('Error: ', err.message, ' while sending update'); }
+      console.log('Shellies(change) Events:', devicekey, 'property:', prop, 'changed from:', oldValue, 'to:', newValue, 'sent to', sse.listenerCount('data'), 'listeners');
+    } catch (err) { console.error('Error: ', err.message, ' while sending update'); }
   })
 
   device.on('offline', () => {
-    console.log('Device with ID', device.id, 'went offline')
-    var devicekey = deviceKey(device.type, device.id);
-    var extractedData = shellylist[devicekey];
+    const devicekey = deviceKey(device.type, device.id);
+    console.log('Device with deviceKey', devicekey, 'went offline')
+    const extractedData = shellylist[devicekey];
     try {
+      sse.listenerCount('shellyRemove');
       sse.send(extractedData, 'shellyRemove');
     } catch (err) { console.log('Error: ', err.message, ' while sending remove'); }
-    shellycoaplist[devicekey] = undefined;
-    shellylist[devicekey] = undefined;
-    // the device went offline
+    delete shellycoaplist[devicekey];
+    delete shellylist[devicekey];
   })
 })
+
 
 // start discovering devices and listening for status updates
 shellies.start();
@@ -174,12 +189,17 @@ shellies.start();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-app.use(logger('dev'));
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
+// Add handler for client to be able to request no compression. This is required for express-sse
+app.use(compression({
+  filter: function (req, res) {
+    return (req.headers['x-no-compression']) ? false : compression.filter(req, res);
+  }
+}));
 app.use('/', indexRouter);
 app.use('/api', apiRouter);
 app.use('/test', testRouter);
@@ -189,7 +209,6 @@ app.get('/events', sse.init);
 app.use(function (req, res, next) {
   next(createError(404));
 });
-
 // error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
@@ -200,5 +219,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
 
 module.exports = app;
