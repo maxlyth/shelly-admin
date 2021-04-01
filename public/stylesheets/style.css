@@ -53,3 +53,26 @@ body {
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=");
   cursor: row-resize;
 }
+
+.shelldetailblock {
+  background-color: #7f7f7f40;
+  margin-bottom: 2rem;
+  padding: 0.75rem 0.25rem;
+}
+.row.shellydetail {
+  font-size: 0.85rem;
+  margin: 0 8px;
+  padding: 0.25rem 0;
+}
+.shellydetail:nth-child(even) {
+  background-color: #00000017;
+}
+.shellydetail:nth-child(odd) {
+  background-color: #ffffff0c;
+}
+.shellydetail :first-child p {
+  font-weight: bold;
+}
+.shellydetail p {
+  margin: 0;
+}
