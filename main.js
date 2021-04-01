@@ -1,6 +1,5 @@
 const { app, BrowserWindow } = require("electron");
-
-const server = require("./app");
+const express = require("./app");
 
 var port = normalizePort(process.env.PORT || '3000');
 

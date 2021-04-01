@@ -1,11 +1,11 @@
+/* eslint-disable lodash/import-scope */
 /* eslint-disable lodash/prefer-lodash-method */
 
-var _ = require('lodash');
+const _ = require('lodash');
 const express = require('express');
-//const joi = require('joi'); //used for validation
-var api = express.Router();
+const api = express.Router();
 const fs = require("fs");
-var path = require('path');
+const path = require('path');
 
 //READ Request Handlers
 api.get('/shellys', function (req, res) {

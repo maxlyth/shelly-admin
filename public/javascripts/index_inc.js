@@ -125,6 +125,7 @@ $(document).ready(function () {
   } else {
     splitRatio = [60, 40] // default sizes
   }
+  // eslint-disable-next-line no-undef
   Split(
     ['#shellylist', '#shellydetails'], {
     direction: 'vertical',
