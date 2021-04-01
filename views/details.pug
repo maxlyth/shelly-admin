@@ -4,23 +4,53 @@ block content
       div.col-2
         img(src='images/shelly-devices/'+imageName, width='100%', style="'object-fit': 'cover'")
       div.col-5
-        each value, key in { 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'lastSeen': 'Last seen:'}
-          div.row
-            div.col-4
-              p= value
-            div.col-8
-              p= shelly[key]
+        div.shelldetailblock
+          each value, key in { 'settings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'lastSeen': 'Last seen:'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
+        div.shelldetailblock
+          each value, key in { 'settings.fw': 'Current Firmware:', 'settings.build_info.build_timestamp': 'Build time:', 'settings.build_info.build_version': 'Build version:', 'status.update.has_update': 'Update available:', 'status.update.new_version': 'Version available:', 'status.update.status': 'Update status:'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
+        div.shelldetailblock
+          each value, key in { 'status.ram_total': 'Total RAM:', 'status.ram_free': 'Free RAM:', 'status.fs_size': 'File system size:', 'status.fs_free': 'File system free:', 'status.uptime': 'Hardware uptime:', 'settings.hwinfo.hw_revision': 'Hardware revision:', 'settings.hwinfo.batch_id': 'Hardware batch ID:'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
+        div.shelldetailblock
+          each value, key in { 'settings.login.enabled': 'Login enabled:', 'settings.login.unprotected': 'Password protected:', 'settings.login.username': 'User name:'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
       div.col-5
-        each value, key in { 'enable': 'MQTT Enabled', 'server': 'MQTT Server', 'user': 'MQTT User', 'clean_session': 'MQTT Clean session', 'keep_alive': 'MQTT Keep alive', 'max_qos': 'MQTT QoS', 'retain': 'MQTT Retain', 'update_period': 'MQTT Update period', 'reconnect_timeout_min': 'MQTT Min reconnect t/o', 'reconnect_timeout_max': 'MQTT Max reconnect t/o'}
-          div.row
-            div.col-4
-              p= value
-            div.col-8
-              p= shelly.settings.mqtt[key]
+        div.shelldetailblock
+          each value, key in { 'settings.wifi_ap.enabled': 'Access point enabled:', 'settings.wifi_ap.ssid': 'Access point SSID:', 'settings.wifi_ap.key': 'Access point key:', 'settings.wifi_sta.enabled': 'Wifi network 1 enabled:', 'settings.wifi_sta.ssid': 'Wifi network 1 SSID:', 'settings.wifi_sta.ipv4_method': 'Wifi network 1 IP:', 'settings.wifi_sta1.enabled': 'Wifi network 2 enabled:', 'settings.wifi_sta1.ssid': 'Wifi network 2 SSID:', 'settings.wifi_sta1.ipv4_method': 'Wifi network 2 IP:', 'settings.ap_roaming.enabled': 'Wifi roaming enabled:', 'settings.ap_roaming.threshold': 'Wifi roaming threshhold:'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
+        div.shelldetailblock
+          each value, key in { 'status.mqtt.connected': 'MQTT Connected', 'settings.mqtt.enable': 'MQTT Enabled', 'settings.mqtt.server': 'MQTT Server', 'settings.mqtt.user': 'MQTT User', 'settings.mqtt.clean_session': 'MQTT Clean session', 'settings.mqtt.keep_alive': 'MQTT Keep alive', 'settings.mqtt.max_qos': 'MQTT QoS', 'settings.mqtt.retain': 'MQTT Retain', 'settings.mqtt.update_period': 'MQTT Update period', 'settings.mqtt.reconnect_timeout_min': 'MQTT Min reconnect t/o', 'settings.mqtt.reconnect_timeout_max': 'MQTT Max reconnect t/o'}
+            div.row.shellydetail
+              div.col-4
+                p= value
+              div.col-8
+                p= _.get(shelly, key, '')
     div.row
       div.col-12
         div.row.overflow-auto(style={'overflow-y': scroll})
           div.col-12(style={'font-size': '11px', 'line-height': '1.0'})
-            code= JSON.stringify(shelly.settings)
+            code= JSON.stringify(shelly)
 
 
