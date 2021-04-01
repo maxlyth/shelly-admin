@@ -11,13 +11,21 @@ const deviceKey = (type, id) => `${type}#${id}`;
 $(document).ready(function () {
   $.fn.dataTable.ext.errMode = 'none';
   shellyTableObj = $('#shellies').DataTable({
-    "retrieve": true,
+    retrieve: true,
     colReorder: true,
     responsive: true,
     paging: false,
-    select: true,
+    select: 'single',
     data: shellylist,
     columns: [
+      {
+        data: null,
+        targets: 0,
+        defaultContent: '',
+        orderable: false,
+        "width": 12,
+        className: 'select-checkbox'
+      },
       { data: "devicekey", "title": "key", "width": 90, "visible": false },
       { data: "id", "title": "ID", "width": 70 },
       { data: "type", "title": "Type", "width": 50, "visible": false },
@@ -58,30 +66,35 @@ $(document).ready(function () {
       },
       {
         extend: 'colvisGroup',
+        enabled: false,
         text: 'MQTT',
         show: [1, 2],
         hide: [3, 4, 5]
       },
       {
         extend: 'colvisGroup',
+        enabled: false,
         text: 'Cloud',
         show: [1, 2],
         hide: [3, 4, 5]
       },
       {
         extend: 'colvisGroup',
+        enabled: false,
         text: 'Network',
         show: [3, 4, 5],
         hide: [1, 2]
       },
       {
         extend: 'colvisGroup',
+        enabled: false,
         text: 'Security',
         show: [3, 4, 5],
         hide: [1, 2]
       },
       {
         extend: 'colvisGroup',
+        enabled: false,
         text: 'Show all',
         show: ':hidden'
       }
