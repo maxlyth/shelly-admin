@@ -21,10 +21,13 @@ $(document).ready(function () {
       {
         data: null,
         targets: 0,
-        defaultContent: '',
+        defaultContent: false,
         orderable: false,
-        "width": 12,
-        className: 'select-checkbox'
+        width: 16,
+        className: '',
+        render: function (data, type, row, meta) {
+          return '<input type="checkbox" id="rowchk_' + row + '" value="' + row + '"><label for="rowchk_' + row + '"></label>';
+        }
       },
       { data: "devicekey", "title": "key", "width": 90, "visible": false },
       { data: "id", "title": "ID", "width": 70 },
@@ -35,7 +38,7 @@ $(document).ready(function () {
       { data: "mqtt_enable", "title": "MQTT", "width": 25 },
       {
         data: "ip", "title": "IP", "width": 60, "render": function (data, _type, _row) {
-          var result = '<a href="http://"' + data + '">' + data + '</a>';
+          var result = '<a href="http://' + data + '">' + data + '</a>';
           return result;
         }, "type": "ip-address"
       },
@@ -48,9 +51,9 @@ $(document).ready(function () {
         }, type: 'chapter'
       },
       { data: "ssid", "title": "SSID", "width": 60 },
-      { data: "rssi", "title": "RSSI", "width": 25 }
+      { data: "rssi", "title": "RSSI", "width": 18 }
     ],
-    order: [[7, "asc"]],
+    order: [[8, "asc"]],
     dom: 'BlrtipR',
     stateSave: true,
     stateSaveCallback: function (settings, data) {

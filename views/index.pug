@@ -36,6 +36,12 @@ block content
         img(src='images/shelly_logo_white.png', height='38px')
         span(style={'font-weight': 'bold', 'font-size': '22px'}) Admin
       form.form-inline
+        .dropdown
+          button#dropdownMenuButton.btn.btn-secondary.dropdown-toggle.mx-3.px-4.my-sm-0(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+            | Actions
+          .dropdown-menu(aria-labelledby='dropdownMenuButton')
+            a.dropdown-item(href='#') Reboot
+            a.dropdown-item(href='#') Update firmware
         button.btn.btn-dark.mx-3.px-4.my-sm-0(type="button", data-toggle="modal" data-target="#preferencesModal") Preferences…
         input#mySearch.form-control.mr-sm-2(type="search", placeholder="Search")
         button.btn.btn-success.px-4.my-2.my-sm-0(type="submit") Filter
@@ -52,7 +58,7 @@ block content
               div#details
 
     #preferencesModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='preferencesModalLabel' aria-hidden='true')
-      .modal-dialog.modal-dialog-centered(role='document')
+      .modal-dialog.modal-lg.modal-dialog-centered(role='document' style={'max-width': '700px'})
         .modal-content.bg-dark
           .modal-header
             h5#preferencesModalLabel.modal-title Preferences
@@ -60,20 +66,42 @@ block content
               span(aria-hidden='true') &times;
           .modal-body
             form
-              .form-group
-                label.col-form-label(for='recipient-name') Shelly Device discovery:
+              .form-group.row
+                label.col-md-12.col-form-label(for='device-discovery') Shelly Device security:
+                  .form-check.form-group
+                    input#useDeviceSecuirty.form-check-input(type="checkbox", name="", disabled)
+                    label.col-md-12.form-check-label(for='useDeviceSecuirty') Use device account:
+                      .form-group.row
+                        label.col-md-5.col-form-label(for='shellyAccount', disabled) Device account
+                        .col-md-7
+                          input#shellyAccount.form-control(type='text' placeholder='AccountName', disabled)
+                      .form-group.row
+                        label.col-md-5.col-form-label(for='shellyPassword', disabled) Password
+                        .col-md-7
+                          input#shellyPassword.form-control(type='password' placeholder='Password', disabled)
+              .form-group.row
+                label.col-md-12.col-form-label(for='device-discovery') Shelly Device discovery:
                   .form-check
-                    input#discoverViaCoAP.form-check-input(type="checkbox", name="")
-                    label.form-check-label(for='discoverViaCoAP') Use CoAP:
+                    input#discoverViaCoAP.form-check-input(type="checkbox", name="", checked)
+                    label.col-md-12.form-check-label(for='discoverViaCoAP') Use CoAP:
+                  .form-check.form-group
+                    input#discoverViaMQTT.form-check-input(type="checkbox", name="", disabled)
+                    label.col-md-12.form-check-label(for='discoverViaMQTT') Use MQTT:
+                      .form-group.row
+                        label.col-md-5.col-form-label(for='mqttServer') MQTT Server
+                        .col-md-7
+                          input#mqttServer.form-control(type='text' placeholder='mqtt.local:1833', disabled)
+                      .form-group.row
+                        label.col-md-5.col-form-label(for='mqttAccount') MQTT Account
+                        .col-md-7
+                          input#mqttAccount.form-control(type='text' placeholder='AccountName', disabled)
+                      .form-group.row
+                        label.col-md-5.col-form-label(for='mqttPassword') MQTT Password
+                        .col-md-7
+                          input#mqttPassword.form-control(type='password' placeholder='Password', disabled)
                   .form-check
-                    input#discoverViaMQTT.form-check-input(type="checkbox", name="")
-                    label.form-check-label(for='discoverViaMQTT') Use MQTT:
-                  .form-check
-                    input#discoverViaIP.form-check-input(type="checkbox", name="")
-                    label.form-check-label(for='discoverViaIP') Use IP Scan:
-              .form-group
-                label.col-form-label(for='message-text') Message:
-                textarea#message-text.form-control
+                    input#discoverViaIP.form-check-input(type="checkbox", name="", disabled)
+                    label.col-md-12.form-check-label(for='discoverViaIP') Use IP Scan:
           .modal-footer
             button.btn.btn-secondary(type='button' data-dismiss='modal') Cancel
             button.btn.btn-primary(type='button') Save
