@@ -5,13 +5,13 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron-forge start",
     "start": "electron main.js",
     "debug": "nodemon --inspect ./bin/www",
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.3",
     "@popperjs/core": "^2.9.1",
     "bootstrap4": "^0.0.1-security",
     "compression": "^1.7.4",
@@ -21,11 +21,14 @@
     "express": "~4.16.1",
     "express-sse": "^0.5.3",
     "flatted": "^3.1.1",
+    "html-entities": "^2.3.2",
     "http-errors": "~1.6.3",
+    "humanize-duration": "^3.25.1",
     "javascript-time-ago": "^2.3.4",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
+    "pretty-bytes": "^1.0.4",
     "pug": "^2.0.0-beta11",
     "shellies": "^1.5.0",
     "split.js": "^1.6.2"
@@ -36,10 +39,12 @@
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
     "@electron-forge/maker-zip": "^6.0.0-beta.54",
+    "bootstrap-scss": "^4.6.0",
     "debug": "^2.6.9",
     "electron": "12.0.2",
     "eslint": "^7.23.0",
     "eslint-plugin-lodash": "^7.2.0",
+    "node-sass": "^5.0.0",
     "nodemon": "^2.0.7"
   },
   "config": {

@@ -15,5 +15,10 @@
   "parserOptions": {
     "ecmaVersion": 12
   },
+  "ignorePatterns": [
+    "jquery/**",
+    "bootstrap/**",
+    "**/node-modules/*"
+  ],
   "rules": {}
 }

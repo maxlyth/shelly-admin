@@ -13,11 +13,12 @@
       "protocol": "inspector",
     },
     {
-      "name": "Launch localhost",
+      "name": "attach localhost",
       "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/test/index.html",
-      "webRoot": "${workspaceFolder}/wwwroot"
+      "request": "attach",
+      "port": 9222,
+      "url": "http://localhost:3000/index.html",
+      "webRoot": "${workspaceFolder}/bin/www"
     },
     {
       "name": "Launch index.html",
