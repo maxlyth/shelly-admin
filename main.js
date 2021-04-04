@@ -1,9 +1,23 @@
-const { app, BrowserWindow } = require("electron");
+console.log('Starting app');
+const { app, BrowserWindow, ipcMain } = require("electron");
+const url = require('url');
+const path = require('path');
 const express = require("./app");
+const SSE = require('express-sse');
+const morgan = require('morgan');
+const shellycoap = require('./shelly-coap.js')
 
-var port = normalizePort(process.env.PORT || '3000');
+const indexRouter = require('./routes/index');
+const apiRouter = require('./routes/api');
+//const app = express();
 
-let mainWindow;
+const sse = new SSE();
+
+const fs = require('fs');
+
+const port = normalizePort(process.env.PORT || '30011');
+
+let mainWindow = null;
 
 function createWindow() {
   express();
@@ -11,15 +25,20 @@ function createWindow() {
     width: 1200,
     height: 700,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
     },
   });
-
-  mainWindow.loadURL("http://localhost:" + port + "/");
-  mainWindow.on("closed", function () {
-    mainWindow = null;
-  });
 }
+
+mainWindow.loadURL(url.format({
+  pathname: path.join(__dirname, './index.html'),
+  protocol: 'file:',
+  slashes: true
+}));
+mainWindow.on("closed", function () {
+  mainWindow = null;
+});
+
 
 app.on("ready", createWindow);
 

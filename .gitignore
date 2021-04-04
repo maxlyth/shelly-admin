@@ -1,3 +1,5 @@
+**/node_modules/
+
 # Logs
 logs
 *.log
@@ -903,3 +905,8 @@ out/shelly-admin-darwin-x64/shelly-admin.app/Contents/Resources/app/views/error.
 out/shelly-admin-darwin-x64/shelly-admin.app/Contents/Resources/app/views/index.pug
 out/shelly-admin-darwin-x64/shelly-admin.app/Contents/Resources/app/views/layout.pug
 out/shelly-admin-darwin-x64/shelly-admin.app/Contents/Resources/app/views/test.pug
+
+out/**
+bootstrap/**
+jquery/**
+Font-Awesome/**

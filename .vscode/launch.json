@@ -17,7 +17,7 @@
       "type": "chrome",
       "request": "attach",
       "port": 9222,
-      "url": "http://localhost:3000/index.html",
+      "url": "http://localhost:3001/index.html",
       "webRoot": "${workspaceFolder}/bin/www"
     },
     {
@@ -42,7 +42,19 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Electron",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "electron-forge",
+      "runtimeArgs": [
+        "start"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Hey buds",
       "skipFiles": [
         "<node_internals>/**"
       ],

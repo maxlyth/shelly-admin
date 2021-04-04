@@ -8,6 +8,7 @@ const path = require('path');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
+const helmet = require('helmet');
 const express = require('express');
 const SSE = require('express-sse');
 const morgan = require('morgan');
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 // Add handler for client to be able to request no compression. This is required for express-sse
+app.use(helmet());
 app.use(compression({
   filter: function (req, res) {
     return (req.headers['x-no-compression']) ? false : compression.filter(req, res);

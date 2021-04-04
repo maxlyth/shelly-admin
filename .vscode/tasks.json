@@ -1,0 +1,17 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Shelly build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "mkdir -p dist && rm -rf \"dist/*\" && rsync -LKa --exclude=\".*\" public dist && rsync -ua --exclude=\".*\" views dist && rsync -ua --exclude=\".*\" routes dist && rsync -ua --exclude=\".*\" bin dist && rsync -a --exclude=\".*\" doc dist && rsync -ua packag*.json *.js *.md LICENSE dist && rm -rf \"dist/public/bootstrap/*\" && node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 scss -o dist/public/css/"
+    }
+  ]
+}
