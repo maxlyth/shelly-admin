@@ -1,0 +1,28 @@
+// Custom.scss
+// Option A: Include all of Bootstrap
+
+@import "../bootstrap/scss/bootstrap";
+
+@media (min-width: 400px) and (max-width: 967.98px) {
+  .card-columns {
+    column-count: 1;
+  }
+}
+
+@media (min-width: 968px) and (max-width: 1491.98px) {
+  .card-columns {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1492px) and (max-width: 2099.98px) {
+  .card-columns {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 2100px) {
+  .card-columns {
+    column-count: 4;
+  }
+}
