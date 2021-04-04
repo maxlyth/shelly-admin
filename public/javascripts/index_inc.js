@@ -21,40 +21,42 @@ $(document).ready(function () {
     columns: [
       {
         data: null,
+        name: "selection",
         targets: 0,
         defaultContent: false,
         orderable: false,
         width: 16,
+        "responsivePriority": 12001,
         className: '',
         render: function (data, type, row, meta) {
           return '<input type="checkbox" id="rowchk_' + row + '" value="' + row + '"><label for="rowchk_' + row + '"></label>';
         }
       },
-      { data: "devicekey", "title": "key", "width": 90, "visible": false },
-      { data: "id", "title": "ID", "width": 70 },
-      { data: "type", "title": "Type", "width": 50, "visible": false },
-      { data: "modelName", "title": "Model", "width": 80 },
-      { data: "givenname", "title": "Device Name", "width": 150 },
-      { data: "online", "title": "Online", "width": 25, "visible": false },
-      { data: "mqtt_enable", "title": "MQTT", "width": 25 },
+      { data: "devicekey", name: "devicekey", "title": "key", "width": 90, "responsivePriority": 11001, "visible": false },
       {
-        data: "ip", "title": "IP", "width": 60, "render": function (data, _type, _row) {
+        data: "ip", name: "ip", "title": "IP", "width": 40, "responsivePriority": -1, "render": function (data, _type, _row) {
           var result = '<a href="http://' + data + '">' + data + '</a>';
           return result;
         }, "type": "ip-address"
       },
-      { data: "lastSeen", "title": "LastSeenCanonical", "width": 100, "visible": false, render: $.fn.dataTable.render.intlDateTime() },
-      { data: "lastSeenHuman", "title": "LastSeen", "width": 70, "type": "natural-time-delta" },
+      { data: "givenname", name: "givenname", "title": "Device Name", "width": 130, "responsivePriority": 0, "data-priority": 0 },
+      { data: "id", name: "id", "title": "ID", "width": 70, "responsivePriority": 10005 },
+      { data: "type", name: "type", "title": "Type", "width": 50, "responsivePriority": 11001, "visible": false },
+      { data: "modelName", name: "model", "title": "Model", "width": 80, "responsivePriority": 10002 },
+      { data: "online", name: "online", "title": "Online", "width": 25, "responsivePriority": 10100, "visible": false },
+      { data: "lastSeen", name: " lastseen", "title": "LastSeenCanonical", "width": 100, "responsivePriority": 11001, "visible": false, render: $.fn.dataTable.render.intlDateTime() },
+      { data: "lastSeenHuman", name: "lastseen-human", "title": "LastSeen", "width": 70, "responsivePriority": 10040, "type": "natural-time-delta" },
+      { data: "mqtt_enable", name: "mqtt", "title": "MQTT", "width": 25, "responsivePriority": 10020 },
       {
-        data: "fw", "title": "Firmware", "width": 35, "render": function (data, _type, _row) {
+        data: "fw", name: "fw", "title": "Firmware", "width": 35, "responsivePriority": 11001, "render": function (data, _type, _row) {
           var result = data ? data.split('/')[1].split('-')[0] : "";
           return result;
         }, type: 'chapter'
       },
-      { data: "ssid", "title": "SSID", "width": 60 },
-      { data: "rssi", "title": "RSSI", "width": 18 }
+      { data: "ssid", name: "ssid", "title": "SSID", "width": 60, "responsivePriority": 10070 },
+      { data: "rssi", name: "rssi", "title": "RSSI", "width": 18, "responsivePriority": 10080 }
     ],
-    order: [[9, "asc"]],
+    order: [["ip", "asc"]],
     dom: 'BlrtipR',
     stateSave: true,
     stateSaveCallback: function (settings, data) {
@@ -174,6 +176,21 @@ $(document).ready(function () {
   });
 });
 
+
+/**
+ * Deep diff between two object, using lodash
+ * @param  {Object} object Object compared
+ * @param  {Object} base   Object to compare with
+ * @return {Object}        Return a new object who represent the diff
+ */
+function difference(object, base) {
+  return _.transform(object, (result, value, key) => {
+    if (!_.isEqual(value, base[key])) {
+      result[key] = _.isObject(value) && _.isObject(base[key]) ? difference(value, base[key]) : value;
+    }
+  });
+}
+
 const ssesource = new EventSource('/events');
 ssesource.addEventListener('shellyUpdate', message => {
   console.log('Got Update');
@@ -181,21 +198,53 @@ ssesource.addEventListener('shellyUpdate', message => {
   var devKey = deviceKey(shelly.type, shelly.id);
   var existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
   var existingObj = existingRow.data()[0];
-  //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
-  if (existingObj) {
-    _.merge(existingObj, shelly);
-    if (shelly.prop) {
-      existingObj[shelly.prop] = shelly.newValue;
-    }
-    //existingObj.givenname = Math.random();
-    //shellyTableObj.rows().deselect();
-    existingRow.invalidate().draw();
-    //existingRow.select();
+  const differences = difference(existingObj, shelly);
+  if (differences.length === 0) {
+    console.log("no differnces in update event");
   } else {
-    //    shellylist[devKey] = shelly;
-    shellyTableObj.row.add(shelly).draw();
+    //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
+    let noVisibleCols = true;
+    for (var col in differences) {
+      if (existingRow.columns(col + ':name')[0].length > 0) {
+        noVisibleCols = false;
+        break;
+      }
+    }
+    if (noVisibleCols === false) {
+      if (existingObj) {
+        _.merge(existingObj, shelly);
+        //existingObj.givenname = Math.random();
+        //shellyTableObj.rows().deselect();
+        existingRow.invalidate().draw();
+        //existingRow.select();
+      } else {
+        //    shellylist[devKey] = shelly;
+        shellyTableObj.row.add(shelly).draw();
+      }
+      //document.querySelector('#events').innerHTML = message.data;
+    }
   }
-  //document.querySelector('#events').innerHTML = message.data;
+}, false);
+ssesource.addEventListener('shellyNotify', message => {
+  console.log('Got Notify');
+  var shelly = JSON.parse(message.data);
+  var devKey = deviceKey(shelly.type, shelly.id);
+  var existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+  var existingObj = existingRow.data()[0];
+
+  //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
+  if (existingRow.columns(shelly.prop + ':name')) {
+    if (existingObj) {
+      _.merge(existingObj, shelly);
+      if (shelly.prop) {
+        existingObj[shelly.prop] = shelly.newValue;
+      }
+    } else {
+      //    shellylist[devKey] = shelly;
+      shellyTableObj.row.add(shelly).draw();
+    }
+    //document.querySelector('#events').innerHTML = message.data;
+  }
 }, false);
 ssesource.addEventListener('shellyCreate', message => {
   console.log('Got Create');

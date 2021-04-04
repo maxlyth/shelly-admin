@@ -14,7 +14,7 @@ block content
             #detail-general.collapse.show(aria-labelledby='heading-detail-general')
               .card-body.px-0.pt-2.pb-1
                 div.row.mx-0.shellydetail.small
-                  each value, key in { 'settings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'settings.device.mac': 'MAC address:', 'lastSeen': 'Last seen:', 'settings.wifirecovery_reboot_enabled': 'No WiFi reboot enabled:', 'settings.factory_reset_from_switch': 'Factory reset from switch:', 'settings.debug_enable': 'Debug enabled:'}
+                  each value, key in { 'settings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'settings.device.mac': 'MAC address:', 'lastSeen': 'Last seen:', 'settings.wifirecovery_reboot_enabled': 'No WiFi reboot:', 'settings.factory_reset_from_switch': 'Reset from switch:', 'settings.debug_enable': 'Debug enabled:'}
                     dt.col-5= value
                     dd.col-7!= getShellyDetail(shelly, key)
 
@@ -86,7 +86,7 @@ block content
             #detail-mqtt.collapse.show(aria-labelledby='heading-detail-mqtt')
               .card-body.px-0.pt-2.pb-1
                 div.row.mx-0.shellydetail.small
-                  each value, key in { 'status.mqtt.connected': 'MQTT Connected', 'settings.mqtt.enable': 'MQTT Enabled', 'settings.mqtt.server': 'MQTT Server', 'settings.mqtt.user': 'MQTT User', 'settings.mqtt.clean_session': 'MQTT Clean session', 'settings.mqtt.keep_alive': 'MQTT Keep alive', 'settings.mqtt.max_qos': 'MQTT QoS', 'settings.mqtt.retain': 'MQTT Retain', 'settings.mqtt.update_period': 'MQTT Update period', 'settings.mqtt.reconnect_timeout_min': 'MQTT Min reconnect t/o', 'settings.mqtt.reconnect_timeout_max': 'MQTT Max reconnect t/o'}
+                  each value, key in { 'status.mqtt.connected': 'MQTT Connected', 'settings.mqtt.enable': 'MQTT Enabled', 'settings.mqtt.server': 'MQTT Server', 'settings.mqtt.user': 'MQTT User', 'settings.mqtt.clean_session': 'MQTT Clean session', 'settings.mqtt.keep_alive': 'MQTT Keep alive', 'settings.mqtt.max_qos': 'MQTT QoS', 'settings.mqtt.retain': 'MQTT Retain', 'settings.mqtt.update_period': 'MQTT Update period', 'settings.mqtt.reconnect_timeout_min': 'MQTT Min timeout', 'settings.mqtt.reconnect_timeout_max': 'MQTT Max timeout'}
                     dt.col-5= value
                     dd.col-7!= getShellyDetail(shelly, key)
 
