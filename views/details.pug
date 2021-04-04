@@ -1,56 +1,114 @@
 block content
-  div.container-fluid.h-100.px-0
-    div.row
-      div.col-2
-        img(src='images/shelly-devices/'+imageName, width='100%', style="'object-fit': 'cover'")
-      div.col-5
-        div.shelldetailblock
-          each value, key in { 'settings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'lastSeen': 'Last seen:'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-        div.shelldetailblock
-          each value, key in { 'settings.fw': 'Current Firmware:', 'settings.build_info.build_timestamp': 'Build time:', 'settings.build_info.build_version': 'Build version:', 'status.update.has_update': 'Update available:', 'status.update.new_version': 'Version available:', 'status.update.status': 'Update status:'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-        div.shelldetailblock
-          each value, key in { 'status.ram_total': 'Total RAM:', 'status.ram_free': 'Free RAM:', 'status.fs_size': 'File system size:', 'status.fs_free': 'File system free:', 'status.uptime': 'Hardware uptime:', 'settings.hwinfo.hw_revision': 'Hardware revision:', 'settings.hwinfo.batch_id': 'Hardware batch ID:'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-        div.shelldetailblock
-          each value, key in { 'settings.login.enabled': 'Login enabled:', 'settings.login.unprotected': 'Password protected:', 'settings.login.username': 'User name:'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-      div.col-5
-        div.shelldetailblock
-          each value, key in { 'settings.wifi_ap.enabled': 'Access point enabled:', 'settings.wifi_ap.ssid': 'Access point SSID:', 'settings.wifi_ap.key': 'Access point key:', 'settings.wifi_sta.enabled': 'Wifi network 1 enabled:', 'settings.wifi_sta.ssid': 'Wifi network 1 SSID:', 'settings.wifi_sta.ipv4_method': 'Wifi network 1 IP:', 'settings.wifi_sta1.enabled': 'Wifi network 2 enabled:', 'settings.wifi_sta1.ssid': 'Wifi network 2 SSID:', 'settings.wifi_sta1.ipv4_method': 'Wifi network 2 IP:', 'settings.ap_roaming.enabled': 'Wifi roaming enabled:', 'settings.ap_roaming.threshold': 'Wifi roaming threshhold:'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-        div.shelldetailblock
-          each value, key in { 'status.mqtt.connected': 'MQTT Connected', 'settings.mqtt.enable': 'MQTT Enabled', 'settings.mqtt.server': 'MQTT Server', 'settings.mqtt.user': 'MQTT User', 'settings.mqtt.clean_session': 'MQTT Clean session', 'settings.mqtt.keep_alive': 'MQTT Keep alive', 'settings.mqtt.max_qos': 'MQTT QoS', 'settings.mqtt.retain': 'MQTT Retain', 'settings.mqtt.update_period': 'MQTT Update period', 'settings.mqtt.reconnect_timeout_min': 'MQTT Min reconnect t/o', 'settings.mqtt.reconnect_timeout_max': 'MQTT Max reconnect t/o'}
-            div.row.shellydetail
-              div.col-4
-                p= value
-              div.col-8
-                p= _.get(shelly, key, '')
-    div.row
-      div.col-12
-        div.row.overflow-auto(style={'overflow-y': scroll})
-          div.col-12(style={'font-size': '11px', 'line-height': '1.0'})
-            code= JSON.stringify(shelly)
+  div.row.h-100.py-0.m-0
+    div.col-2.h-100.py-3.pl-3.pr-1
+      img(src='images/shelly-devices/'+imageName, width='100%', style="'object-fit': 'cover'")
+    div.col-10.p-2.h-100
+      div.container-fluid.h-100.px-0.table-responsive
+        div.card-columns
+          //- https://disjfa.github.io/bootstrap-tricks/card-collapse-tricks/
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-general.d-block(data-toggle='collapse' href='#detail-general' aria-expanded='true' aria-controls='detail-general')
+                i.fa.fa-chevron-down.fa-pull-right
+                | General info
+            #detail-general.collapse.show(aria-labelledby='heading-detail-general')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'settings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'settings.device.mac': 'MAC address:', 'lastSeen': 'Last seen:', 'settings.wifirecovery_reboot_enabled': 'No WiFi reboot enabled:', 'settings.factory_reset_from_switch': 'Factory reset from switch:', 'settings.debug_enable': 'Debug enabled:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
 
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-network.d-block(data-toggle='collapse' href='#detail-network' aria-expanded='true' aria-controls='detail-network')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Network info
+            #detail-network.collapse.show(aria-labelledby='heading-detail-network')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'status.wifi_sta.ip': 'IP address:', 'settings.device.hostname': 'Hostname:', 'settings.discoverableip': 'Is discoverable?:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-firmware.d-block(data-toggle='collapse' href='#detail-firmware' aria-expanded='true' aria-controls='detail-firmware')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Firmware
+            #detail-firmware.collapse.show(aria-labelledby='heading-detail-firmware')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'settings.fw': 'Current Firmware:', 'settings.build_info.build_timestamp': 'Build time:', 'settings.build_info.build_version': 'Build version:', 'status.update.has_update': 'Update available:', 'status.update.new_version': 'Version available:', 'status.update.status': 'Update status:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-hardware.d-block(data-toggle='collapse' href='#detail-hardware' aria-expanded='true' aria-controls='detail-hardware')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Hardware
+            #detail-hardware.collapse.show(aria-labelledby='heading-detail-hardware')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'status.ram_total': 'Total RAM:', 'status.ram_free': 'Free RAM:', 'status.fs_size': 'File system size:', 'status.fs_free': 'File system free:', 'status.uptime': 'Hardware uptime:', 'settings.hwinfo.hw_revision': 'Hardware revision:', 'settings.hwinfo.batch_id': 'Hardware batch ID:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-security.d-block(data-toggle='collapse' href='#detail-security' aria-expanded='true' aria-controls='detail-security')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Security
+            #detail-security.collapse.show(aria-labelledby='heading-detail-security')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'settings.login.enabled': 'Login enabled:', 'settings.login.unprotected': 'Password protected:', 'settings.login.username': 'User name:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-wireless.d-block(data-toggle='collapse' href='#detail-wireless' aria-expanded='true' aria-controls='detail-wireless')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Wireless
+            #detail-wireless.collapse.show(aria-labelledby='heading-detail-wireless')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'settings.wifi_ap.enabled': 'Access point enabled:', 'settings.wifi_ap.ssid': 'Access point SSID:', 'settings.wifi_ap.key': 'Access point key:', 'settings.wifi_sta.enabled': 'Wifi network 1 enabled:', 'settings.wifi_sta.ssid': 'Wifi network 1 SSID:', 'settings.wifi_sta.ipv4_method': 'Wifi network 1 IP:', 'settings.wifi_sta1.enabled': 'Wifi network 2 enabled:', 'settings.wifi_sta1.ssid': 'Wifi network 2 SSID:', 'settings.wifi_sta1.ipv4_method': 'Wifi network 2 IP:', 'settings.ap_roaming.enabled': 'Wifi roaming enabled:', 'settings.ap_roaming.threshold': 'Wifi roaming threshhold:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-mqtt.d-block(data-toggle='collapse' href='#detail-mqtt' aria-expanded='true' aria-controls='detail-mqtt')
+                i.fa.fa-chevron-down.fa-pull-right
+                | MQTT
+            #detail-mqtt.collapse.show(aria-labelledby='heading-detail-mqtt')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'status.mqtt.connected': 'MQTT Connected', 'settings.mqtt.enable': 'MQTT Enabled', 'settings.mqtt.server': 'MQTT Server', 'settings.mqtt.user': 'MQTT User', 'settings.mqtt.clean_session': 'MQTT Clean session', 'settings.mqtt.keep_alive': 'MQTT Keep alive', 'settings.mqtt.max_qos': 'MQTT QoS', 'settings.mqtt.retain': 'MQTT Retain', 'settings.mqtt.update_period': 'MQTT Update period', 'settings.mqtt.reconnect_timeout_min': 'MQTT Min reconnect t/o', 'settings.mqtt.reconnect_timeout_max': 'MQTT Max reconnect t/o'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-power.d-block(data-toggle='collapse' href='#detail-power' aria-expanded='true' aria-controls='detail-power')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Battery and power saving
+            #detail-power.collapse.show(aria-labelledby='heading-detail-power')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  each value, key in { 'settings.device.sleep_mode': 'Sleep mode:', 'settings.sleep_mode.period': 'Sleep period:', 'settings.sleep_mode.unit': 'Sleep period units:', 'settings.remain_awake': 'Remain awake:', 'status.bat.value': 'Battery remaining:', 'status.bat.voltage': 'Battery voltage:', 'status.charger': 'Is charging:'}
+                    dt.col-5= value
+                    dd.col-7!= getShellyDetail(shelly, key)
+
+          div.card.mb-3.bg-transparent.shellydetailcard
+            .card-header.px-3.pb-1.pt-2
+              a#heading-detail-raw.d-block.collapsed(data-toggle='collapse' href='#detail-raw' aria-expanded='true' aria-controls='detail-raw')
+                i.fa.fa-chevron-down.fa-pull-right
+                | Raw data
+            #detail-raw.collapse(aria-labelledby='heading-detail-raw')
+              .card-body.px-0.pt-2.pb-1
+                div.row.mx-0.shellydetail.small
+                  code= JSON.stringify(shelly, null, 4)
 

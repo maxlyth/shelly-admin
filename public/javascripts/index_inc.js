@@ -5,6 +5,7 @@
 
 var shellyTableObj = {};
 var shellylist = [{}];
+var detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
 
 const deviceKey = (type, id) => `${type}#${id}`;
 
@@ -53,14 +54,14 @@ $(document).ready(function () {
       { data: "ssid", "title": "SSID", "width": 60 },
       { data: "rssi", "title": "RSSI", "width": 18 }
     ],
-    order: [[8, "asc"]],
+    order: [[9, "asc"]],
     dom: 'BlrtipR',
     stateSave: true,
     stateSaveCallback: function (settings, data) {
-      localStorage.setItem('ShellyAdmin_TableState_v1', JSON.stringify(data))
+      localStorage.setItem('ShellyAdmin_TableState_v1', JSON.stringify(data));
     },
     stateLoadCallback: function (settings) {
-      return JSON.parse(localStorage.getItem('ShellyAdmin_TableState_v1'))
+      return JSON.parse(localStorage.getItem('ShellyAdmin_TableState_v1'));
     },
     buttons: [
       {
@@ -104,9 +105,10 @@ $(document).ready(function () {
     ]
   });
 
-  // Move teh DataTable buttons up into the BooStrap navigation bar
+  // Move the DataTable buttons up into the BooStrap navigation bar
   var columnButtons = $('div.dt-buttons').detach();
-  columnButtons.insertBefore('nav.navbar>form');
+  //columnButtons.insertBefore('#tableButtons');
+  $('#tableButtons').append(columnButtons);
 
   // Set the Bootrap navigation bar search field as the DataTables dynamic filter
   $('#mySearch').keyup(function () {
@@ -117,7 +119,26 @@ $(document).ready(function () {
   shellyTableObj.on('select', function (e, dt, type, indexes) {
     if (type === 'row') {
       var devicekey = shellyTableObj.rows(indexes).data().pluck('devicekey')[0];
-      $('#details').load("/api/details/" + encodeURIComponent(devicekey));
+      $('#details').load("/api/details/" + encodeURIComponent(devicekey), function (response, status, xhr) {
+        if (status == "error") {
+          console.log(status);
+          return;
+        }
+        $('#details .collapse').on('shown.bs.collapse', function (e) {
+          detailCardsState[e.currentTarget.id] = true;
+          localStorage.setItem('ShellyAdmin_DetailCardsState_v1', JSON.stringify(detailCardsState));
+        });
+        $('#details .collapse').on('hidden.bs.collapse', function (e) {
+          detailCardsState[e.currentTarget.id] = false;
+          localStorage.setItem('ShellyAdmin_DetailCardsState_v1', JSON.stringify(detailCardsState));
+        });
+        for (var cardID in detailCardsState) {
+          if (detailCardsState[cardID] === false) {
+            $('#' + cardID).removeClass('show');
+            $('#heading-' + cardID).addClass('collapsed');
+          }
+        }
+      });
     }
   });
 

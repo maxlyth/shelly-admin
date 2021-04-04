@@ -54,25 +54,17 @@ body {
   cursor: row-resize;
 }
 
-.shelldetailblock {
-  background-color: #7f7f7f40;
-  margin-bottom: 2rem;
-  padding: 0.75rem 0.25rem;
+.shellydetailcard .card-header {
+  background-color: #3a5faf30;
 }
-.row.shellydetail {
-  font-size: 0.85rem;
-  margin: 0 8px;
-  padding: 0.25rem 0;
+.shellydetail dt,
+.shellydetail dd {
+  line-height: 1.33;
 }
-.shellydetail:nth-child(even) {
-  background-color: #00000017;
+
+.card-header .fa {
+  transition: 0.3s transform ease-in-out;
 }
-.shellydetail:nth-child(odd) {
-  background-color: #ffffff0c;
-}
-.shellydetail :first-child p {
-  font-weight: bold;
-}
-.shellydetail p {
-  margin: 0;
+.card-header .collapsed .fa {
+  transform: rotate(90deg);
 }
