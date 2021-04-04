@@ -3,9 +3,47 @@
 
 const _ = require('lodash');
 const express = require('express');
-const api = express.Router();
 const fs = require("fs");
 const path = require('path');
+const prettyBytes = require('pretty-bytes');
+const humanizeDuration = require("humanize-duration");
+const encode = require("html-entities").encode;
+
+const api = express.Router();
+
+function getShellyDetail(shelly, key) {
+  let result = _.get(shelly, key, null);
+  switch (key) {
+    case 'status.ram_free':
+    case 'status.ram_total':
+    case 'status.fs_size':
+    case 'status.fs_free':
+      result = prettyBytes(result);
+      break;
+    case 'settings.mqtt.keep_alive':
+    case 'settings.mqtt.update_period':
+    case 'settings.mqtt.reconnect_timeout_min':
+    case 'settings.mqtt.reconnect_timeout_max':
+    case 'status.uptime':
+      result = humanizeDuration(result * 1000, { largest: 2 });
+      break;
+    case 'lastSeen':
+      result = humanizeDuration((Date.now() - Date.parse(result)), { maxDecimalPoints: 1, largest: 2 });
+      break;
+    case 'settings.device.mac':
+      result = result
+        .match(/.{1,2}/g)    // ["4a", "89", "26", "c4", "45", "78"]
+        .join(':')
+      break;
+    default:
+      if (result === true) result = 'True';
+      if (result === false) result = 'False';
+      result = (result === null) ? '<small class="text-muted">n/a</small>' : encode(result);
+      if (result == '') result = '&nbsp;';
+      break;
+  }
+  return result;
+}
 
 //READ Request Handlers
 api.get('/shellys', function (req, res) {
@@ -26,6 +64,8 @@ api.get('/shellys:devicekey', function (req, res) {
 });
 
 api.get('/details/:devicekey', function (req, res) {
+  req.app.locals._ = _;
+  req.app.locals.getShellyDetail = getShellyDetail;
   var shellylist = req.app.locals.shellylist;
   //const shelly = shellylist.find(c => c.devicekey === req.params.devicekey);
   const shelly = shellylist[req.params.devicekey];

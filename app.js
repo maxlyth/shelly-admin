@@ -3,7 +3,7 @@
 /* eslint-env node */
 /* eslint no-unused-vars: ["error", { "args": "none" }]*/
 /* eslint-disable lodash/prefer-lodash-method */
-const lodash = require('lodash');
+//const lodash = require('lodash');
 const path = require('path');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
@@ -19,7 +19,7 @@ const app = express();
 const sse = new SSE();
 
 app.locals.shellylist = shellycoap(sse);
-app.locals._ = lodash;
+//app.locals._ = lodash;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
