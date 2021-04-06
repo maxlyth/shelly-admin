@@ -148,7 +148,7 @@ shellies.on('discover', device => {
       extractedData.oldValue = oldValue;
       extractedData.newValue = newValue;
       sse.send(extractedData, 'shellyUpdate');
-      console.log('Shellies(change) Events:', devicekey, 'property:', prop, 'changed from:', oldValue, 'to:', newValue, 'sent //to', sse.listenerCount('data'), 'listeners');
+      //console.log('Shellies(change) Events:', devicekey, 'property:', prop, 'changed from:', oldValue, 'to:', newValue, 'sent //to', sse.listenerCount('data'), 'listeners');
     } catch (err) { console.error('Error: ', err.message, ' while sending update'); }
   })
 

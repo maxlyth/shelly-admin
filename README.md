@@ -1,7 +1,6 @@
 # Shelly Admin Express
 
-Handles discovery and communication with [Shelly](https://shelly.cloud) devices, using both
-[CoAP](http://coap.technology) over HTTP and [MQTT](https://mqtt.org/).
+Handles discovery and communication with [Shelly](https://shelly.cloud) devices, using both [CoAP](http://coap.technology) over HTTP and [MQTT](https://mqtt.org/).
 
 An adminstration console written to manage a whole network of Shellys and to enure that their configuration is homogenous. The goal of the development is to deliver the application upon NodeJS/ExpressJS so that it can be deployed both as a "Add-On" to run within the HomeAssistant UI and also can be built using ElectronJS framework to make standalone platform native applications for MacOS, Windows, Linux and mobile.
 

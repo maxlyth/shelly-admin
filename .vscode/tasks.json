@@ -12,6 +12,56 @@
       },
       "type": "shell",
       "command": "mkdir -p dist && rm -rf \"dist/*\" && rsync -LKa --exclude=\".*\" public dist && rsync -ua --exclude=\".*\" views dist && rsync -ua --exclude=\".*\" routes dist && rsync -ua --exclude=\".*\" bin dist && rsync -a --exclude=\".*\" doc dist && rsync -ua packag*.json *.js *.md LICENSE dist && rm -rf \"dist/public/bootstrap/*\" && node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 scss -o dist/public/css/"
+    },
+    {
+      "label": "Bootstrap 4.6.0 build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external && rm -rf bootstrap && git clone https://github.com/twbs/bootstrap.git bootstrap && cd bootstrap && git checkout v4.6.0 && npm i && npm run dist && cd ../.. && rm -rf public/lib/bootstrap/4.6.0 && mkdir -p public/lib/bootstrap/4.6.0 && cp -r external/bootstrap/dist/* public/lib/bootstrap/4.6.0/"
+    },
+    {
+      "label": "Build jQuery 3.6.0",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external && rm -rf jquery && git clone https://github.com/jquery/jquery.git jquery && cd jquery && git checkout 3.6.0 && npm i && npm run build && cd ../.. && rm -rf  public/lib/jquery/3.6.0 && mkdir -p public/lib/jquery/3.6.0 && cp -r external/jquery/dist/* public/lib/jquery/3.6.0/"
+    },
+    {
+      "label": "Build splitjs 1.6.4",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external && rm -rf splitjs && git clone https://github.com/nathancahill/split.git splitjs && cd splitjs && npm i && npm run build && cd ../.. && rm -rf public/lib/splitjs/1.6.4 && mkdir -p public/lib/splitjs/1.6.4 && cp -r external/splitjs/packages/splitjs/dist/* public/lib/splitjs/1.6.4/"
+    },
+    {
+      "label": "Build lodash 4.17.21",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external && rm -rf lodash && git clone https://github.com/lodash/lodash.git lodash && cd lodash && git checkout 4.17.21 && npm i && npm run build && cd ../.. && rm -rf  public/lib/lodash/4.17.21 && mkdir -p public/lib/lodash/4.17.21 && cp -r external/lodash/dist/* public/lib/lodash/4.17.21/"
+    },
+    {
+      "label": "Build Font-Awesome 5.15.3",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external && rm -rf fontawesome && git clone https://github.com/FortAwesome/Font-Awesome.git fontawesome && cd .. && rm -rf  public/lib/fontawesome/5.15.3 && mkdir -p public/lib/fontawesome/5.15.3 && cp -r external/fontawesome/css external/fontawesome/js external/fontawesome/webfonts public/lib/fontawesome/5.15.3/"
     }
   ]
 }
