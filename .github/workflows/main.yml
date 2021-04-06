@@ -15,5 +15,5 @@ jobs:
         args: |
           --test \
           --all \
-          --target dist \
+          --target hass.io \
           --docker-hub maxlyth
