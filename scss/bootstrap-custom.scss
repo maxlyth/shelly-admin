@@ -1,7 +1,7 @@
 // Custom.scss
 // Option A: Include all of Bootstrap
 
-@import "../bootstrap/scss/bootstrap";
+@import "../external/bootstrap/scss/bootstrap";
 
 @media (min-width: 400px) and (max-width: 967.98px) {
   .card-columns {

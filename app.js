@@ -1,9 +1,6 @@
-/* eslint-disable lodash/import-scope */
-/* eslint-disable lodash/matches-prop-shorthand */
+/* eslint-disable lodash/prefer-lodash-method */
 /* eslint-env node */
 /* eslint no-unused-vars: ["error", { "args": "none" }]*/
-/* eslint-disable lodash/prefer-lodash-method */
-//const lodash = require('lodash');
 const path = require('path');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
@@ -20,7 +17,6 @@ const app = express();
 const sse = new SSE();
 
 app.locals.shellylist = shellycoap(sse);
-//app.locals._ = lodash;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -31,8 +27,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-// Add handler for client to be able to request no compression. This is required for express-sse
 app.use(helmet());
+// Add handler for client to be able to request no compression. This is required for express-sse
 app.use(compression({
   filter: function (req, res) {
     return (req.headers['x-no-compression']) ? false : compression.filter(req, res);
@@ -56,6 +52,5 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
 
 module.exports = app;

@@ -11,7 +11,17 @@
         "panel": "shared"
       },
       "type": "shell",
-      "command": "mkdir -p dist && rm -rf \"dist/*\" && rsync -LKa --exclude=\".*\" public dist && rsync -ua --exclude=\".*\" views dist && rsync -ua --exclude=\".*\" routes dist && rsync -ua --exclude=\".*\" bin dist && rsync -a --exclude=\".*\" doc dist && rsync -ua packag*.json *.js *.md LICENSE dist && rm -rf \"dist/public/bootstrap/*\" && node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 scss -o dist/public/css/"
+      "command": "mkdir -p dist && rm -rf \"dist/*\" && rsync -LKa --exclude=\".*\" public dist && rsync -ua --exclude=\".*\" views dist && rsync -ua --exclude=\".*\" routes dist && rsync -ua --exclude=\".*\" bin dist && rsync -a --exclude=\".*\" doc dist && rsync -ua packag*.json *.js *.md LICENSE dist"
+    },
+    {
+      "label": "SCSS Build bootstrap",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "type": "shell",
+      "command": "cd external/bootstrap && node-sass --include-path node_modules --output-style compressed --source-map true --source-map-contents true --precision 6 ../../scss -o ../../public/stylesheets/"
     },
     {
       "label": "Bootstrap 4.6.0 build",

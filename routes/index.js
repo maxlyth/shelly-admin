@@ -1,7 +1,7 @@
 /*eslint no-undef: "error"*/
 /*eslint-env node*/
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 //var Split2 = require('split.js');
 
 /* GET home page. */

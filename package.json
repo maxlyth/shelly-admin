@@ -5,14 +5,17 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron main.js",
+    "start": "node ./bin/www",
+    "start:dev": "nodemon --inspect ./bin/www",
     "debug": "nodemon --inspect ./bin/www",
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.12.1",
     "@fortawesome/fontawesome-free": "^5.15.3",
     "@popperjs/core": "^2.9.1",
+    "apollo-server-express": "^2.22.2",
     "bootstrap4": "^0.0.1-security",
     "compression": "^1.7.4",
     "cookie-parser": "~1.4.4",
@@ -21,6 +24,7 @@
     "express": "~4.16.1",
     "express-sse": "^0.5.3",
     "flatted": "^3.1.1",
+    "graphql": "^15.5.0",
     "helmet": "^4.4.1",
     "html-entities": "^2.3.2",
     "http-errors": "~1.6.3",
@@ -35,6 +39,9 @@
     "split.js": "^1.6.4"
   },
   "devDependencies": {
+    "@babel/cli": "^7.13.14",
+    "@babel/core": "^7.13.14",
+    "@babel/preset-env": "^7.13.12",
     "@electron-forge/cli": "^6.0.0-beta.54",
     "@electron-forge/maker-deb": "^6.0.0-beta.54",
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",

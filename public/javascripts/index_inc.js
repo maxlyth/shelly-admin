@@ -35,8 +35,7 @@ $(document).ready(function () {
       { data: "devicekey", name: "devicekey", "title": "key", "width": 90, "responsivePriority": 11001, "visible": false },
       {
         data: "ip", name: "ip", "title": "IP", "width": 40, "responsivePriority": -1, "render": function (data, _type, _row) {
-          var result = '<a href="http://' + data + '">' + data + '</a>';
-          return result;
+          return '<a href="http://' + data + '">' + data + '</a>';
         }, "type": "ip-address"
       },
       { data: "givenname", name: "givenname", "title": "Device Name", "width": 130, "responsivePriority": 0, "data-priority": 0 },
@@ -49,8 +48,7 @@ $(document).ready(function () {
       { data: "mqtt_enable", name: "mqtt", "title": "MQTT", "width": 25, "responsivePriority": 10020 },
       {
         data: "fw", name: "fw", "title": "Firmware", "width": 35, "responsivePriority": 11001, "render": function (data, _type, _row) {
-          var result = data ? data.split('/')[1].split('-')[0] : "";
-          return result;
+          return data ? data.split('/')[1].split('-')[0] : "";
         }, type: 'chapter'
       },
       { data: "ssid", name: "ssid", "title": "SSID", "width": 60, "responsivePriority": 10070 },
@@ -205,7 +203,7 @@ ssesource.addEventListener('shellyUpdate', message => {
   } else {
     //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
     let noVisibleCols = true;
-    for (var col in differences) {
+    for (let col in differences) {
       if (existingRow.columns(col + ':name')[0].length > 0) {
         // eslint-disable-next-line no-unused-vars
         noVisibleCols = false;
@@ -248,8 +246,8 @@ ssesource.addEventListener('shellyNotify', message => {
 }, false);
 ssesource.addEventListener('shellyCreate', message => {
   console.log('Got Create');
-  var shelly = JSON.parse(message.data);
-  //  var devKey = deviceKey(shelly.type, shelly.id);
+  const shelly = JSON.parse(message.data);
+  //  const devKey = deviceKey(shelly.type, shelly.id);
   //  shellylist[devKey] = shelly;
   shellyTableObj.row.add(shelly).draw();
   //  document.querySelector('#events').innerHTML = message.data;
