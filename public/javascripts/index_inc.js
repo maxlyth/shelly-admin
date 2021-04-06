@@ -3,9 +3,9 @@
 /* eslint-env browser, jquery */
 /* global _:readonly */
 
-var shellyTableObj = {};
-var shellylist = [{}];
-var detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
+let shellyTableObj = undefined;
+const shellylist = [{}];
+const detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
 
 const deviceKey = (type, id) => `${type}#${id}`;
 
@@ -56,7 +56,7 @@ $(document).ready(function () {
       { data: "ssid", name: "ssid", "title": "SSID", "width": 60, "responsivePriority": 10070 },
       { data: "rssi", name: "rssi", "title": "RSSI", "width": 18, "responsivePriority": 10080 }
     ],
-    order: [["ip", "asc"]],
+    order: [[2, "asc"]],
     dom: 'BlrtipR',
     stateSave: true,
     stateSaveCallback: function (settings, data) {
@@ -108,7 +108,7 @@ $(document).ready(function () {
   });
 
   // Move the DataTable buttons up into the BooStrap navigation bar
-  var columnButtons = $('div.dt-buttons').detach();
+  const columnButtons = $('div.dt-buttons').detach();
   //columnButtons.insertBefore('#tableButtons');
   $('#tableButtons').append(columnButtons);
 
@@ -120,7 +120,7 @@ $(document).ready(function () {
   // Set a DataTables row selection handler to get a fresh data set from server for selected device and show the result in details card
   shellyTableObj.on('select', function (e, dt, type, indexes) {
     if (type === 'row') {
-      var devicekey = shellyTableObj.rows(indexes).data().pluck('devicekey')[0];
+      const devicekey = shellyTableObj.rows(indexes).data().pluck('devicekey')[0];
       $('#details').load("/api/details/" + encodeURIComponent(devicekey), function (response, status, xhr) {
         if (status == "error") {
           console.log(status);
@@ -134,7 +134,7 @@ $(document).ready(function () {
           detailCardsState[e.currentTarget.id] = false;
           localStorage.setItem('ShellyAdmin_DetailCardsState_v1', JSON.stringify(detailCardsState));
         });
-        for (var cardID in detailCardsState) {
+        for (let cardID in detailCardsState) {
           if (detailCardsState[cardID] === false) {
             $('#' + cardID).removeClass('show');
             $('#heading-' + cardID).addClass('collapsed');
@@ -145,7 +145,7 @@ $(document).ready(function () {
   });
 
   // Split the window into two stacked sections using a ratio persisted from previous use if avail
-  var splitRatio = localStorage.getItem('ShellyAdmin_WinSplit_v1')
+  let splitRatio = localStorage.getItem('ShellyAdmin_WinSplit_v1')
   if (splitRatio) {
     splitRatio = JSON.parse(splitRatio)
   } else {
@@ -194,10 +194,11 @@ function difference(object, base) {
 const ssesource = new EventSource('/events');
 ssesource.addEventListener('shellyUpdate', message => {
   console.log('Got Update');
-  var shelly = JSON.parse(message.data);
-  var devKey = deviceKey(shelly.type, shelly.id);
-  var existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-  var existingObj = existingRow.data()[0];
+  const shelly = JSON.parse(message.data);
+  const devKey = deviceKey(shelly.type, shelly.id);
+  if (_.isNil(shellyTableObj)) return;
+  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey == devKey ? true : false; });
+  const existingObj = existingRow.data()[0];
   const differences = difference(existingObj, shelly);
   if (differences.length === 0) {
     console.log("no differnces in update event");
@@ -206,31 +207,30 @@ ssesource.addEventListener('shellyUpdate', message => {
     let noVisibleCols = true;
     for (var col in differences) {
       if (existingRow.columns(col + ':name')[0].length > 0) {
+        // eslint-disable-next-line no-unused-vars
         noVisibleCols = false;
         break;
       }
     }
-    if (noVisibleCols === false) {
-      if (existingObj) {
-        _.merge(existingObj, shelly);
-        //existingObj.givenname = Math.random();
-        //shellyTableObj.rows().deselect();
-        existingRow.invalidate().draw();
-        //existingRow.select();
-      } else {
-        //    shellylist[devKey] = shelly;
-        shellyTableObj.row.add(shelly).draw();
-      }
-      //document.querySelector('#events').innerHTML = message.data;
+    if (existingObj) {
+      _.merge(existingObj, shelly);
+      //existingObj.givenname = Math.random();
+      //shellyTableObj.rows().deselect();
+      existingRow.invalidate().draw();
+      //existingRow.select();
+    } else {
+      //    shellylist[devKey] = shelly;
+      shellyTableObj.row.add(shelly).draw();
     }
+    //document.querySelector('#events').innerHTML = message.data;
   }
 }, false);
 ssesource.addEventListener('shellyNotify', message => {
   console.log('Got Notify');
-  var shelly = JSON.parse(message.data);
-  var devKey = deviceKey(shelly.type, shelly.id);
-  var existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-  var existingObj = existingRow.data()[0];
+  const shelly = JSON.parse(message.data);
+  const devKey = deviceKey(shelly.type, shelly.id);
+  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+  const existingObj = existingRow.data()[0];
 
   //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
   if (existingRow.columns(shelly.prop + ':name')) {
@@ -256,9 +256,9 @@ ssesource.addEventListener('shellyCreate', message => {
 }, false);
 ssesource.addEventListener('shellyRemove', message => {
   console.log('Got Remove');
-  var shelly = JSON.parse(message.data);
-  var existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
-  var existingObj = existingRow.data();
+  const shelly = JSON.parse(message.data);
+  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
+  const existingObj = existingRow.data();
   if (existingObj) {
     existingRow.remove();
   }
