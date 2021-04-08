@@ -25,6 +25,7 @@ app.set('view engine', 'pug');
 
 app.use(morgan('dev'));
 app.use(cors());
+app.options('*', cors()) // include before other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
