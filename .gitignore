@@ -2,6 +2,9 @@
 external
 out
 dist/*
+*.code-workspace
+package-lock.json
+nodemon.json
 
 # Logs
 logs
