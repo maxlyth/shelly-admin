@@ -3,7 +3,7 @@ external
 out
 dist/*
 *.code-workspace
-package-lock.json
+**/package-lock.json
 nodemon.json
 
 # Logs

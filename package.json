@@ -12,32 +12,22 @@
     "make": "electron-forge make"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.12.1",
-    "@fortawesome/fontawesome-free": "^5.15.3",
-    "@popperjs/core": "^2.9.1",
-    "apollo-server-express": "^2.22.2",
-    "bootstrap4": "^0.0.1-security",
     "compression": "^1.7.4",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
-    "datatables": "^1.10.18",
-    "electron-squirrel-startup": "^1.0.0",
     "express": "~4.16.1",
     "express-sse": "^0.5.3",
     "flatted": "^3.1.1",
-    "graphql": "^15.5.0",
     "helmet": "^4.4.1",
     "html-entities": "^2.3.2",
     "http-errors": "~1.6.3",
     "humanize-duration": "^3.25.1",
     "javascript-time-ago": "^2.3.4",
-    "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
     "pretty-bytes": "^1.0.4",
     "pug": "^2.0.0-beta11",
-    "shellies": "^1.5.0",
-    "split.js": "^1.6.4"
+    "shellies": "^1.5.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.14",
