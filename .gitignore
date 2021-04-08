@@ -6,6 +6,8 @@ dist/*
 **/package-lock.json
 nodemon.json
 
+**/.DS_Store
+
 # Logs
 logs
 *.log
