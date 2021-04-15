@@ -20,7 +20,7 @@ api.get('/shellys', function (req, res) {
   res.send(result);
 });
 
-api.get('/shellys:devicekey', function (req, res) {
+api.get('/shellys/:devicekey', function (req, res) {
   const shellylist = req.app.locals.shellylist;
   const shelly = shellylist.find(c => c.devicekey == req.params.devicekey);
   if (_.isObject(shelly)) {
@@ -74,7 +74,7 @@ api.get('/details/:devicekey', function (req, res) {
     const imageName = (fs.existsSync(imagePath)) ? shelly.type + '.png' : 'Unknown.png';
     res.render('details', { 'title': 'Shelly Details', 'shelly': shelly, 'imageName': imageName });
   } else {
-    res.status(404).send('<h2 style="color: darkred;">Ooops... Cant find what you are looking for!</h2>');
+    res.status(404).send('<h2 style="color: darkred;">Sorry... Can not find Shelly matching key:' + req.params.devicekey + '</h2>');
   }
 });
 

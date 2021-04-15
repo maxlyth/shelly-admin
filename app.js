@@ -30,7 +30,7 @@ app.enable('trust proxy', 'loopback, 172.30.32.1');
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(process.env.PREFIX, express.static(path.join(__dirname, 'public')));
 //app.use(helmet());
 // Add handler for client to be able to request no compression. This is required for express-sse
 app.use(compression({

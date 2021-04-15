@@ -7,7 +7,7 @@ let shellyTableObj = undefined;
 const shellylist = [{}];
 const detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
 
-const deviceKey = (type, id) => `${type}#${id}`;
+const deviceKey = (type, id) => `${type}-${id}`;
 
 $(document).ready(function () {
   $.fn.dataTable.ext.errMode = 'none';

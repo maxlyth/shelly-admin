@@ -8,7 +8,7 @@ const _ = require('lodash');
 const TimeAgo = require('javascript-time-ago');
 const en = require('javascript-time-ago/locale/en');
 const shellies = require('shellies')
-const deviceKey = (type, id) => `${type}#${id}`;
+const deviceKey = (type, id) => `${type}-${id}`;
 
 var shellycoaplist = {};
 var shellylist = {};
