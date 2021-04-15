@@ -1,19 +1,25 @@
 #!/usr/bin/env node
-
-/**
- * Module dependencies.
- */
-
-var app = require('../app');
-var debug = require('debug')('shelly-admin:server');
-var http = require('http');
+/* eslint-disable lodash/prefer-lodash-typecheck */
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '43812');
-app.set('port', port);
+require('dotenv').config()
+var port = process.env.PORT = normalizePort(process.env.PORT || '43812');
+var host = process.env.HOST = normalizeHost(process.env.HOST || 'localhost');
+process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
+
+/**
+* Module dependencies.
+*/
+
+var app = require('../app');
+var debug = require('debug')('shelly-admin:server');
+var http = require('http');
+
+
+
 
 /**
  * Create HTTP server.
@@ -25,7 +31,7 @@ var server = http.createServer(app);
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(port, host);
 server.on('error', onError);
 server.on('listening', onListening);
 
@@ -47,6 +53,21 @@ function normalizePort(val) {
   }
 
   return false;
+}
+
+/**
+ * Normalize a host into a IP, string, or false.
+ */
+
+function normalizeHost(val) {
+  return val;
+}
+/**
+ * Normalize a URL prefix path into a string.
+ */
+
+function normalizePrefix(val) {
+  return val;
 }
 
 /**

@@ -5,8 +5,8 @@ const path = require('path');
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
-const cors = require('cors');
-const helmet = require('helmet');
+//const cors = require('cors');
+//const helmet = require('helmet');
 const express = require('express');
 const SSE = require('express-sse');
 const morgan = require('morgan');
@@ -24,21 +24,21 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 app.use(morgan('dev'));
-app.use(cors());
-app.options('*', cors()) // include before other routes
+//app.use(cors());
+//app.options('*', cors()) // include before other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(helmet());
+//app.use(helmet());
 // Add handler for client to be able to request no compression. This is required for express-sse
 app.use(compression({
   filter: function (req, res) {
     return (req.headers['x-no-compression']) ? false : compression.filter(req, res);
   }
 }));
-app.use('/', indexRouter);
-app.use('/api', apiRouter);
+app.use(path.join(process.env.PREFIX, '/'), indexRouter);
+app.use(path.join(process.env.PREFIX, '/api'), apiRouter);
 app.get('/events', sse.init);
 
 // catch 404 and forward to error handler
