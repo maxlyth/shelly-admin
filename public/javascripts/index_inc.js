@@ -119,7 +119,7 @@ $(document).ready(function () {
   shellyTableObj.on('select', function (e, dt, type, indexes) {
     if (type === 'row') {
       const devicekey = shellyTableObj.rows(indexes).data().pluck('devicekey')[0];
-      $('#details').load("/api/details/" + encodeURIComponent(devicekey), function (response, status, xhr) {
+      $('#details').load("api/details/" + encodeURIComponent(devicekey), function (response, status, xhr) {
         if (status == "error") {
           console.log(status);
           return;
@@ -164,7 +164,7 @@ $(document).ready(function () {
 
   // Empty the Datable of all rows and load a fresh set of devices from server
   $.ajax({
-    url: "/api/shellys"
+    url: "api/shellys"
   }).done(function (data) {
     shellyTableObj.clear();
     data.forEach(element => {
@@ -189,7 +189,7 @@ function difference(object, base) {
   });
 }
 
-const ssesource = new EventSource('/events');
+const ssesource = new EventSource('events');
 ssesource.addEventListener('shellyUpdate', message => {
   console.log('Got Update');
   const shelly = JSON.parse(message.data);
