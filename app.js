@@ -26,7 +26,7 @@ app.set('view engine', 'pug');
 app.use(morgan('dev'));
 app.use(cors());
 app.options('*', cors()) // include before other routes
-app.enable('trust proxy', 'loopback, 172.30.32.1');
+app.enable('trust proxy', process.env.TRUSTPROXY);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

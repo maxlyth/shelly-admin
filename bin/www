@@ -8,6 +8,8 @@
 require('dotenv').config()
 var port = process.env.PORT = normalizePort(process.env.PORT || '43812');
 var host = process.env.HOST = normalizeHost(process.env.HOST || 'localhost');
+process.env.TRUSTPROXY = process.env.TRUSTPROXY || 'loopback';
+process.env.UIMODE = process.env.UIMODE || 'light';
 process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
 
 /**
