@@ -16,7 +16,7 @@ process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
 * Module dependencies.
 */
 
-var app = require('../app');
+var expressapp = require('../app');
 var debug = require('debug')('shelly-admin:server');
 var http = require('http');
 
@@ -27,7 +27,7 @@ var http = require('http');
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+var server = http.createServer(expressapp);
 
 /**
  * Listen on provided port, on all network interfaces.

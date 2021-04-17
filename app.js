@@ -16,7 +16,6 @@ const indexRouter = require('./routes/index');
 const apiRouter = require('./routes/api');
 const app = express();
 const sse = new SSE();
-
 app.locals.shellylist = shellycoap(sse);
 
 // view engine setup
@@ -56,5 +55,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
 
 module.exports = app;

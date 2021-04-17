@@ -40,16 +40,17 @@
       "type": "pwa-node"
     },
     {
-      "type": "node",
-      "request": "launch",
       "name": "Electron",
+      "request": "launch",
+      "runtimeArgs": [
+        "run-script",
+        "electron"
+      ],
+      "runtimeExecutable": "npm",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "electron-forge",
-      "runtimeArgs": [
-        "start"
-      ]
+      "type": "pwa-node"
     },
     {
       "type": "node",

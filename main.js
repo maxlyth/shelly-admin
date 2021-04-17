@@ -1,26 +1,84 @@
 console.log('Starting app');
-const { app, BrowserWindow, ipcMain } = require("electron");
+/**
+ * Get port from environment and store in Express.
+ */
+
+require('dotenv').config();
+var port = process.env.PORT = process.env.PORT || '43812';
+var host = process.env.HOST = process.env.HOST || 'localhost';
+process.env.TRUSTPROXY = process.env.TRUSTPROXY || 'loopback';
+process.env.UIMODE = process.env.UIMODE || 'light';
+process.env.PREFIX = process.env.PREFIX || '';
+
+const expressapp = require("./app");
+const { app, BrowserWindow } = require("electron");
+/**
+* Module dependencies.
+*/
+
+var debug = require('debug')('shelly-admin:server');
+var http = require('http');
 const url = require('url');
-const path = require('path');
-const express = require("./app");
-const SSE = require('express-sse');
-const morgan = require('morgan');
-const shellycoap = require('./shelly-coap.js')
 
-const indexRouter = require('./routes/index');
-const apiRouter = require('./routes/api');
-//const app = express();
 
-const sse = new SSE();
+/**
+ * Create HTTP server.
+ */
 
-const fs = require('fs');
+var server = http.createServer(expressapp);
 
-const port = normalizePort(process.env.PORT || '30011');
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(process.env.PORT, process.env.HOST);
+server.on('error', onError);
+server.on('listening', onListening);
+
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof process.env.PORT === 'string'
+    ? 'Pipe ' + process.env.PORT
+    : 'Port ' + process.env.PORT;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
 
 let mainWindow = null;
 
 function createWindow() {
-  express();
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 700,
@@ -28,52 +86,27 @@ function createWindow() {
       nodeIntegration: true,
     },
   });
+  let homeURL = url.format({
+    protocol: 'http:',
+    hostname: process.env.HOST,
+    port: process.env.PORT,
+    pathname: process.env.PREFIX
+  });
+  mainWindow.loadURL(homeURL);
 }
 
-mainWindow.loadURL(url.format({
-  pathname: path.join(__dirname, './index.html'),
-  protocol: 'file:',
-  slashes: true
-}));
-mainWindow.on("closed", function () {
-  mainWindow = null;
-});
+app.whenReady().then(() => {
+  createWindow()
 
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+})
 
-app.on("ready", createWindow);
-
-app.on("resize", function (e, x, y) {
-  mainWindow.setSize(x, y);
-});
-
-app.on("window-all-closed", function () {
-  if (process.platform !== "darwin") {
-    app.quit();
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
   }
-});
-
-app.on("activate", function () {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val) {
-  var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
+})
