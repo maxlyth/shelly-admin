@@ -1,7 +1,7 @@
 {
   "name": "shelly-admin",
   "description": "Shelly Admin",
-  "version": "0.1.11",
+  "version": "0.2.1",
   "author": "Max Lyth",
   "private": true,
   "main": "main.js",
@@ -19,8 +19,8 @@
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
     "express-sse": "^0.5.3",
-    "helmet": "^4.4.1",
     "html-entities": "^2.3.2",
     "http-errors": "~1.6.3",
     "humanize-duration": "^3.25.1",

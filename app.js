@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const cors = require('cors');
 //const helmet = require('helmet');
+const proxy = require('express-http-proxy');
 const express = require('express');
 const SSE = require('express-sse');
 const morgan = require('morgan');
@@ -39,8 +40,17 @@ app.use(compression({
 }));
 app.use(path.join(process.env.PREFIX, '/'), indexRouter);
 app.use(path.join(process.env.PREFIX, '/api'), apiRouter);
+app.use(path.join(process.env.PREFIX, '/proxy/:addr'), proxy(function (req, res) {
+  const addr = req.params.addr;
+  return 'http://' + addr;
+}, {
+  userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
+    let data = proxyResData.toString('utf8');
+    data = data.replace(',url:"/"+url,', ',url:""+url,');
+    return data;
+  }
+}));
 app.get('/events', sse.init);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

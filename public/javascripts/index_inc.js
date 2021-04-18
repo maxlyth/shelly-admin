@@ -293,7 +293,7 @@ $(document).ready(function () {
 
 function handleShellyDirect(shellyIP) {
   console.info("Display shelly iFrame for " + shellyIP);
-  $('#shellyAccessModal iframe').attr('src', "http://" + shellyIP);
+  $('#shellyAccessModal iframe').attr('src', "proxy/" + shellyIP + "/");
   $('#shellyAccessModal').modal('show');
 }
 
