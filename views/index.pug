@@ -1,6 +1,11 @@
 extends layout
 
 block scripts
+  link(as='font', type='font/woff2', href='fonts/roboto/Roboto-Regular.woff2', crossorigin='anonymous')
+  link(as='font', type='font/woff2', href='fonts/roboto/Roboto-Regular.woff2', crossorigin='anonymous')
+  link(rel='stylesheet', type='text/css', href='lib/fontawesome/5.15.3/css/regular.min.css')
+  link(rel='stylesheet', type='text/css', href='lib/fontawesome/5.15.3/css/solid.min.css')
+  link(rel='stylesheet', type='text/css', href='lib/fontawesome/5.15.3/css/fontawesome.min.css')
   link(rel='stylesheet', type='text/css', href='stylesheets/bootstrap-custom.css')
   link(rel='stylesheet', type='text/css', href='lib/datatables/DataTables-1.10.24/css/dataTables.bootstrap4.css')
   link(rel='stylesheet', type='text/css', href='lib/datatables/Buttons-1.7.0/css/buttons.bootstrap4.css')
@@ -8,13 +13,9 @@ block scripts
   link(rel='stylesheet', type='text/css', href='lib/datatables/FixedHeader-3.1.8/css/fixedHeader.bootstrap4.css')
   link(rel='stylesheet', type='text/css', href='lib/datatables/Responsive-2.2.7/css/responsive.bootstrap4.css')
   link(rel='stylesheet', type='text/css', href='lib/datatables/Select-1.3.3/css/select.bootstrap4.css')
-  link(rel='stylesheet', type='text/css', href='lib/fontawesome/5.15.3/css/solid.min.css')
-  link(rel='stylesheet', type='text/css', href='lib/fontawesome/5.15.3/css/fontawesome.min.css')
-  link(as='font', type='font/woff2', href='fonts/roboto/Roboto-Regular.woff2', crossorigin='anonymous')
-  link(as='font', type='font/woff2', href='fonts/roboto/Roboto-Medium.woff2', crossorigin='anonymous')
   script(defer src='lib/lodash/4.17.21/lodash.min.js')
   script(defer src='lib/jquery/3.6.0/jquery.min.js')
-  script(defer src='lib/bootstrap/4.6.0/js/bootstrap.min.js')
+  script(defer src='lib/bootstrap/4.6.0/js/bootstrap.bundle.min.js')
   script(defer src='lib/splitjs/1.6.4/split.min.js')
   script(defer src='lib/datatables/DataTables-1.10.24/js/jquery.dataTables.js')
   script(defer src='lib/datatables/DataTables-1.10.24/js/dataTables.bootstrap4.js')
@@ -33,21 +34,27 @@ block scripts
 
 block content
   div.container-fluid.px-0.h-100(style={'font-family': 'Roboto, Noto, sans-serif'})
-    nav.navbar.navbar-dark.px-3.bg-primary
-      a.navbar-brand.py-0
-        img(src='images/shelly_logo_white.png', height='38px')
-        span(style={'font-weight': 'bold', 'font-size': '22px'}) Admin
-      div#tableButtons.d-none.d-lg-block
-      .dropdown
-        button#dropdownMenuButton.btn.btn-secondary.dropdown-toggle.mx-3.px-4.my-sm-0(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
-          | Actions
-        .dropdown-menu(aria-labelledby='dropdownMenuButton')
-          a.dropdown-item(href='#') Reboot
-          a.dropdown-item(href='#') Update firmware
-      button.btn.btn-dark.px-4.my-sm-0(type="button", data-toggle="modal" data-target="#preferencesModal") Preferences…
-      form.form-inline
-        input#mySearch.form-control.mx-2.my-sm-0(type="search", placeholder="Search")
-        button.btn.btn-success.px-4.my-sm-0(type="submit") Filter
+    nav.navbar.navbar-dark.px-2.bg-primary
+      div.px-0.container-fluid.d-flex.justify-content-between
+        div
+          a.navbar-brand.py-0
+            img(src='images/shelly_logo_white.png', height='38px')
+            span(style={'font-weight': 'bold', 'font-size': '22px'}) Admin
+        div.d-none.d-lg-block
+          div#tableButtons
+        div
+          div.dropdown
+            button#dropdownMenuButton.btn.btn-secondary.dropdown-toggle.mx-1.px-3.my-sm-0(type='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false')
+              | Actions
+            .dropdown-menu(aria-labelledby='dropdownMenuButton')
+              a.dropdown-item(href='#') Reboot
+              a.dropdown-item(href='#') Update firmware
+        div
+          button.btn.btn-dark.px-3.my-sm-0(type="button", data-toggle="modal" data-target="#preferencesModal") Preferences…
+        div.d-none.d-lg-block
+          form.form-inline.flex-nowrap
+            input#mySearch.form-control.mx-1(type="search", placeholder="Search")
+            button.btn.btn-success.d-none.d-lg-block.px-3.my-sm-0(type="submit") Filter
     div.container-fluid.px-0(style={'height': 'calc(100% - 56px)'})
       div#shellylist.row.mx-0.overflow-auto.table-responsive
         div.col-12.my-2
@@ -57,6 +64,12 @@ block content
           div.card.text-white.my-0.h-100
             div.card-header.bg-primary Shelly details
             div#details.card-body.p-0.h-100.bg-dark
+
+    #shellyAccessModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shellyAccessModalLabel' aria-hidden='true')
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-body
+            iframe(src='http://172.31.8.71' width='100%' height='100%' frameborder='0' allowtransparency='true')
 
     #preferencesModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='preferencesModalLabel' aria-hidden='true')
       .modal-dialog.modal-lg.modal-dialog-centered(role='document' style={'max-width': '700px'})

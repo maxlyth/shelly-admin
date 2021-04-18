@@ -15,7 +15,10 @@ api.get('/shellys', function (req, res) {
   const shellylist = req.app.locals.shellylist;
   let result = [];
   for (const shelly in shellylist) {
-    result.push(shellylist[shelly])
+    var extractedData = { ...shellylist[shelly] };
+    delete extractedData?.settings;
+    delete extractedData?.status;
+    result.push(extractedData)
   }
   res.send(result);
 });
@@ -75,6 +78,29 @@ api.get('/details/:devicekey', function (req, res) {
     res.render('details', { 'title': 'Shelly Details', 'shelly': shelly, 'imageName': imageName });
   } else {
     res.status(404).send('<h2 style="color: darkred;">Sorry... Can not find Shelly matching key:' + req.params.devicekey + '</h2>');
+  }
+});
+
+api.get('/update/:devicekey', async function (req, res) {
+  const shellycoaplist = req.app.locals.shellycoaplist;
+  const device = shellycoaplist[req.params.devicekey];
+  if (_.isObject(device)) {
+    const response = await device.request.get(`${device.host}/ota?update=true`);
+    res.send("OK");
+  } else {
+    res.status(404).send('<h2 style="color: darkred;">Update failed... Can not find Shelly matching key:' + req.params.devicekey + '</h2>');
+  }
+});
+
+api.get('/updatestatus/:devicekey', async function (req, res) {
+  const shellycoaplist = req.app.locals.shellycoaplist;
+  const device = shellycoaplist[req.params.devicekey];
+  if (_.isObject(device)) {
+    const statusResponse = await device.getStatus();
+    console.log(`Got update status of '${statusResponse.update.status}' for device ${req.params.devicekey}`);
+    res.send(statusResponse.update.status);
+  } else {
+    res.status(404).send('<h2 style="color: darkred;">Status failed... Can not find Shelly matching key:' + req.params.devicekey + '</h2>');
   }
 });
 

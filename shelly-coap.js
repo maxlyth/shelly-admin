@@ -33,6 +33,7 @@ function shellyExtract(device) {
     type: device.type,
     devicename: device.name,
     ip: device.host,
+    fw: {},
     online: device.online,
     lastSeen: device.lastSeen,
     lastSeenHuman: timeAgo.format(Date.parse(device.lastSeen)),
@@ -60,6 +61,8 @@ function pollStatus(device) {
     newExtraction.status = newStatus;
     newExtraction.mqtt_connected = newStatus.mqtt.connected;
     newExtraction.rssi = newStatus.wifi_sta.rssi;
+    newExtraction.fw['hasupdate'] = newStatus.update.has_update;
+    newExtraction.fw['new'] = newStatus.update.new_version;
     newExtraction = _.merge(existingDevice, newExtraction);
     const differences = _.difference(shellylist[devicekey], newExtraction);
     if (differences.length === 0) {
@@ -102,7 +105,7 @@ function pollSettings(device) {
     }
     let newExtraction = shellyExtract(device);
     newExtraction.settings = newSettings;
-    newExtraction.fw = newSettings.fw;
+    newExtraction.fw['current'] = newSettings.fw;
     newExtraction.givenname = newSettings.name;
     newExtraction.ssid = newSettings.wifi_sta.ssid;
     newExtraction.mqtt_enable = newSettings.mqtt.enable;
@@ -142,8 +145,10 @@ shellies.on('discover', device => {
   device.on('change', (prop, newValue, oldValue) => {
     // a property on the device has changed
     const devicekey = deviceKey(device.type, device.id);
-    var extractedData = shellylist[devicekey];
+    var extractedData = { ...shellylist[devicekey] };
     try {
+      delete extractedData?.settings;
+      delete extractedData?.status;
       extractedData.prop = prop;
       extractedData.oldValue = oldValue;
       extractedData.newValue = newValue;
@@ -169,7 +174,7 @@ function start(SSE) {
   sse = SSE;
   // start discovering devices and listening for status updates
   shellies.start();
-  return shellylist;
+  return [shellylist, shellycoaplist];
 }
 
 module.exports = start;

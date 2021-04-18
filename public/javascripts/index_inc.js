@@ -20,87 +20,202 @@ $(document).ready(function () {
     data: shellylist,
     columns: [
       {
-        data: null,
-        name: "selection",
-        targets: 0,
-        defaultContent: false,
-        orderable: false,
-        width: 16,
-        "responsivePriority": 12001,
-        className: '',
-        render: function (data, type, row, meta) {
-          return '<input type="checkbox" id="rowchk_' + row + '" value="' + row + '"><label for="rowchk_' + row + '"></label>';
+        "data": null,
+        "name": "selection",
+        "targets": 0,
+        "defaultContent": false,
+        "orderable": false,
+        "width": "20px",
+        "responsivePriority": 3,
+        "className": '',
+        "render": function (data, type, row, meta) {
+          return `<input type="checkbox" id="rowchk_${row}" value="${row}"><label for="rowchk_${row}"></label>`;
         }
       },
-      { data: "devicekey", name: "devicekey", "title": "key", "width": 90, "responsivePriority": 11001, "visible": false },
       {
-        data: "ip", name: "ip", "title": "IP", "width": 40, "responsivePriority": -1, "render": function (data, _type, _row) {
-          return '<a href="http://' + data + '">' + data + '</a>';
-        }, "type": "ip-address"
+        "data": "devicekey",
+        "name": "devicekey",
+        "title": "key",
+        "width": 0,
+        "responsivePriority": 11001,
+        "visible": false
       },
-      { data: "givenname", name: "givenname", "title": "Device Name", "width": 130, "responsivePriority": 0, "data-priority": 0 },
-      { data: "id", name: "id", "title": "ID", "width": 70, "responsivePriority": 10005 },
-      { data: "type", name: "type", "title": "Type", "width": 50, "responsivePriority": 11001, "visible": false },
-      { data: "modelName", name: "model", "title": "Model", "width": 80, "responsivePriority": 10002 },
-      { data: "online", name: "online", "title": "Online", "width": 25, "responsivePriority": 10100, "visible": false },
-      { data: "lastSeen", name: " lastseen", "title": "LastSeenCanonical", "width": 100, "responsivePriority": 11001, "visible": false, render: $.fn.dataTable.render.intlDateTime() },
-      { data: "lastSeenHuman", name: "lastseen-human", "title": "LastSeen", "width": 70, "responsivePriority": 10040, "type": "natural-time-delta" },
-      { data: "mqtt_enable", name: "mqtt", "title": "MQTT", "width": 25, "responsivePriority": 10020 },
       {
-        data: "fw", name: "fw", "title": "Firmware", "width": 35, "responsivePriority": 11001, "render": function (data, _type, _row) {
-          return data ? data.split('/')[1].split('-')[0] : "";
-        }, type: 'chapter'
+        "data": "ip",
+        "name": "ip",
+        "title": "IP",
+        "width": "100px",
+        "responsivePriority": 1,
+        "className": "text-nowrap text-truncate",
+        "render": function (data, _type, _row) {
+          return `<div class="shellydirect" onclick="handleShellyDirect('${data}')" data-toggle="tooltip" title="Open Shelly Web Admin"><i class="fas fa-rocket"></i>&nbsp;${data}</div>`;
+        },
+        "type": "ip-address"
       },
-      { data: "ssid", name: "ssid", "title": "SSID", "width": 60, "responsivePriority": 10070 },
-      { data: "rssi", name: "rssi", "title": "RSSI", "width": 18, "responsivePriority": 10080 }
+      {
+        "data": "givenname",
+        "name": "givenname",
+        "title": "Device Name",
+        "width": 220,
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 2,
+        "data-priority": 0
+      },
+      {
+        "data": "id",
+        "name": "id",
+        "title": "ID",
+        "className": "text-nowrap text-truncate",
+        "width": 130,
+        "responsivePriority": 8005
+      },
+      {
+        "data": "type",
+        "name": "type",
+        "title": "Type",
+        "width": 100,
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 9001,
+        "visible": false
+      },
+      {
+        "data": "modelName",
+        "name": "model",
+        "title": "Model",
+        "className": "text-nowrap text-truncate",
+        "width": 100,
+        "responsivePriority": 8002
+      },
+      {
+        "data": "online",
+        "name": "online",
+        "title": "Online",
+        "width": "30px",
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 8100,
+        "visible": false
+      },
+      {
+        "data": "lastSeen",
+        "name": " lastseen",
+        "title": "LastSeenCanonical",
+        "responsivePriority": 9001,
+        "width": 100,
+        "className": "text-nowrap text-truncate",
+        "visible": false,
+        "render": $.fn.dataTable.render.intlDateTime()
+      },
+      {
+        "data": "lastSeenHuman",
+        "name": "lastseen-human",
+        "title": "LastSeen",
+        "width": 100,
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 8040,
+        "type": "natural-time-delta"
+      },
+      {
+        "data": "mqtt_enable",
+        "name": "mqtt",
+        "title": "MQTT",
+        "width": "30px",
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 8020
+      },
+      {
+        "data": "fw",
+        "name": "fw",
+        "title": "Firmware",
+        "width": "40px",
+        "className": "text-nowrap text-truncate",
+        "responsivePriority": 5,
+        "render": function (data, _type, _row) {
+          let result = '';
+          data ??= {};
+          data.current ??= "/-";
+          let currentName = data.current.split('/')[1].split('-')[0];
+          result = currentName;
+          if (data.hasupdate || false) {
+            data.new ??= '';
+            const devicekey = _row['devicekey'];
+            result += "<span>&nbsp;&nbsp;</span>";
+            result += `<span onclick="handleShellyUpdate(this, '${devicekey}');" data-toggle="tooltip" title="Start firmware update" data-content="${data.new}"><i class="fas fa-sync-alt" style="color:red"></i></span>`;
+          }
+          return result;
+        },
+        "type": "chapter"
+      },
+      {
+        "data": "ssid",
+        "name": "ssid",
+        "title": "SSID",
+        "width": 100,
+        "responsivePriority": 8070
+      },
+      {
+        "data": "rssi",
+        "name": "rssi",
+        "title": "<i class=\"fas fa-signal\"></i>",
+        "width": "18px",
+        "responsivePriority": 8000
+      }
     ],
-    order: [[2, "asc"]],
-    dom: 'BlrtipR',
-    stateSave: true,
-    stateSaveCallback: function (settings, data) {
+    "order": [[2, "asc"]],
+    "dom": 'BlrtipR',
+    "stateSave": true,
+    "stateSaveCallback": function (settings, data) {
       localStorage.setItem('ShellyAdmin_TableState_v1', JSON.stringify(data));
     },
-    stateLoadCallback: function (settings) {
+    "stateLoadCallback": function (settings) {
       return JSON.parse(localStorage.getItem('ShellyAdmin_TableState_v1'));
     },
-    buttons: [
+    "rowCallback": function (row, data) {
+      $('[data-toggle="tooltip"]', row).tooltip();
+    },
+    "buttons": [
       {
         extend: 'colvis',
-        collectionLayout: 'fixed two-column'
+        collectionLayout: 'fixed two-column',
+        "className": "d-none d-lg-block"
       },
       {
         extend: 'colvisGroup',
         enabled: false,
         text: 'MQTT',
         show: [1, 2],
-        hide: [3, 4, 5]
+        hide: [3, 4, 5],
+        "className": "d-none d-xl-inline-block"
       },
       {
         extend: 'colvisGroup',
         enabled: false,
         text: 'Cloud',
         show: [1, 2],
-        hide: [3, 4, 5]
+        hide: [3, 4, 5],
+        "className": "d-none d-xl-inline-block"
       },
       {
         extend: 'colvisGroup',
         enabled: false,
         text: 'Network',
         show: [3, 4, 5],
-        hide: [1, 2]
+        hide: [1, 2],
+        "className": "d-none d-xl-inline-block"
       },
       {
         extend: 'colvisGroup',
         enabled: false,
         text: 'Security',
         show: [3, 4, 5],
-        hide: [1, 2]
+        hide: [1, 2],
+        "className": "d-none d-xl-inline-block"
       },
       {
         extend: 'colvisGroup',
         enabled: false,
         text: 'Show all',
-        show: ':hidden'
+        show: ':hidden',
+        "className": "d-none d-xl-inline-block"
       }
     ]
   });
@@ -109,6 +224,7 @@ $(document).ready(function () {
   const columnButtons = $('div.dt-buttons').detach();
   //columnButtons.insertBefore('#tableButtons');
   $('#tableButtons').append(columnButtons);
+  $('#tableButtons .flex-wrap').addClass('text-nowrap').removeClass('flex-wrap');
 
   // Set the Bootrap navigation bar search field as the DataTables dynamic filter
   $('#mySearch').keyup(function () {
@@ -172,8 +288,67 @@ $(document).ready(function () {
     });
     shellyTableObj.draw();
   });
+
 });
 
+function handleShellyDirect(shellyIP) {
+  console.info("Display shelly iFrame for " + shellyIP);
+  $('#shellyAccessModal iframe').attr('src', "http://" + shellyIP);
+  $('#shellyAccessModal').modal('show');
+}
+
+function pollUpdateTimer() {
+  var element = this.element;
+  var devicekey = this.devicekey;
+  var tableCell = this.tableCell;
+  var originalContent = this.originalContent;
+  var startTime = this.startTime;
+  var curStatus = this.curStatus;
+  $.ajax({ url: "api/updatestatus/" + devicekey })
+    .done(function (data) {
+      console.info(`Got update status of ${data} for ${devicekey}`);
+      if (data == 'idle') {
+        tableCell.html(`<span><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
+        return;
+      }
+      if ((Date.now() - startTime) > 60000) {
+        tableCell.html(originalContent);
+        return;
+      }
+      if (data != curStatus) {
+        curStatus = data;
+        tableCell.html(`<span><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
+      }
+      setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+    })
+    .fail(function (data) {
+      console.error(`Updatestatus failed with ${data} for ${devicekey}`);
+      if ((Date.now() - startTime) > 60000) {
+        tableCell.html(originalContent);
+      } else {
+        setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+      }
+    });
+}
+
+function handleShellyUpdate(element, devicekey) {
+  console.info("Start firmware update for " + devicekey);
+  let tableCell = $(element).parent();
+  let originalContent = tableCell.html();
+  let startTime = Date.now();
+  let curStatus = 'Requesting…';
+  $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
+  tableCell.html(`<span>${curStatus}</span>`);
+  $.ajax({ url: "api/update/" + devicekey })
+    .done(function (data) {
+      console.error("Requested firmware update for " + devicekey);
+      setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+    })
+    .fail(function (data) {
+      tableCell.html(originalContent);
+      console.error("Failed to request firmware update for " + devicekey);
+    });
+}
 
 /**
  * Deep diff between two object, using lodash

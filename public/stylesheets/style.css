@@ -54,6 +54,33 @@ body {
   cursor: row-resize;
 }
 
+.shellydirect {
+  cursor: pointer;
+  color: lightskyblue;
+}
+.shellydirect:hover {
+  text-decoration: underline;
+  cursor: pointer;
+  color: lightblue;
+  text-shadow: 1px 1px 1px #555;
+}
+
+#shellyAccessModal .modal-dialog {
+  width: 98%;
+  height: 90%;
+  padding: 0;
+}
+
+#shellyAccessModal .modal-content {
+  width: 100%;
+  height: 100%;
+}
+
+#shellyAccessModal .modal-body {
+  width: 100%;
+  height: 100%;
+}
+
 .shellydetailcard .card-header {
   background-color: #3a5faf30;
 }
