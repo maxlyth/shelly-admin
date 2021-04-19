@@ -129,17 +129,34 @@ $(document).ready(function () {
         "width": "40px",
         "className": "text-nowrap text-truncate",
         "responsivePriority": 5,
-        "render": function (data, _type, _row) {
+        "render": function (data, _type, _row, _meta) {
           let result = '';
           data ??= {};
           data.current ??= "/-";
           let currentName = data.current.split('/')[1].split('-')[0];
           result = currentName;
-          if (data.hasupdate || false) {
-            data.new ??= '';
-            const devicekey = _row['devicekey'];
-            result += "<span>&nbsp;&nbsp;</span>";
-            result += `<span onclick="handleShellyUpdate(this, '${devicekey}');" data-toggle="tooltip" title="Start firmware update" data-content="${data.new}"><i class="fas fa-sync-alt" style="color:red"></i></span>`;
+          if (_type == 'display') {
+            result = '<span>' + currentName + '</span>';
+            let [currentCell, currentContent] = [null, null];
+            if (shellyTableObj) currentCell = shellyTableObj.cell(_meta.row, _meta.col);
+            if (currentCell) currentContent = currentCell.node();
+            if (currentContent) currentContent = $(currentContent);
+            if (currentContent) {
+              if ($('span[updating]', currentContent).length > 0) {
+                result = currentContent.html();
+                return result;
+              }
+              if ($('span[updated]', currentContent).length > 0) {
+                result = currentContent.html();
+                return result;
+              }
+            }
+            if (data.hasupdate || false) {
+              data.new ??= '';
+              const devicekey = _row['devicekey'];
+              result = `<span onclick="handleShellyUpdate(this, '${devicekey}');" data-toggle="tooltip" title="Start firmware update" data-content="${data.new}">${currentName}&nbsp;&nbsp;`;
+              result += `<i class="fas fa-sync-alt" style="color:red"></i></span>`;
+            }
           }
           return result;
         },
@@ -291,6 +308,7 @@ $(document).ready(function () {
 
 });
 
+// eslint-disable-next-line no-unused-vars
 function handleShellyDirect(shellyIP) {
   console.info("Display shelly iFrame for " + shellyIP);
   $('#shellyAccessModal iframe').attr('src', "proxy/" + shellyIP + "/");
@@ -308,7 +326,15 @@ function pollUpdateTimer() {
     .done(function (data) {
       console.info(`Got update status of ${data} for ${devicekey}`);
       if (data == 'idle') {
-        tableCell.html(`<span><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
+        tableCell.html(`<span updated><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
+        setTimeout(function () {
+          $('[updated]', tableCell).removeAttr('updated');
+          $.ajax({
+            url: "api/shelly/" + devicekey
+          }).done(function (data) {
+            shellyTableObj.row(tableCell).data(data).draw();
+          })
+        }, 15000);
         return;
       }
       if ((Date.now() - startTime) > 60000) {
@@ -317,12 +343,12 @@ function pollUpdateTimer() {
       }
       if (data != curStatus) {
         curStatus = data;
-        tableCell.html(`<span><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
+        tableCell.html(`<span updating><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
       }
       setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
-      console.error(`Updatestatus failed with ${data} for ${devicekey}`);
+      console.warning(`Updatestatus failed with ${data} for ${devicekey}`);
       if ((Date.now() - startTime) > 60000) {
         tableCell.html(originalContent);
       } else {
@@ -331,6 +357,7 @@ function pollUpdateTimer() {
     });
 }
 
+// eslint-disable-next-line no-unused-vars
 function handleShellyUpdate(element, devicekey) {
   console.info("Start firmware update for " + devicekey);
   let tableCell = $(element).parent();
@@ -338,10 +365,10 @@ function handleShellyUpdate(element, devicekey) {
   let startTime = Date.now();
   let curStatus = 'Requesting…';
   $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
-  tableCell.html(`<span>${curStatus}</span>`);
+  tableCell.html(`<span updating>${curStatus}</span>`);
   $.ajax({ url: "api/update/" + devicekey })
     .done(function (data) {
-      console.error("Requested firmware update for " + devicekey);
+      console.info("Requested firmware update for " + devicekey);
       setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
@@ -365,16 +392,17 @@ function difference(object, base) {
 }
 
 const ssesource = new EventSource('events');
-ssesource.addEventListener('shellyUpdate', message => {
-  console.log('Got Update');
+ssesource.addEventListener('shellyRefresh', message => {
+  console.log('Got Refresh');
   const shelly = JSON.parse(message.data);
   const devKey = deviceKey(shelly.type, shelly.id);
   if (_.isNil(shellyTableObj)) return;
-  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey == devKey ? true : false; });
-  const existingObj = existingRow.data()[0];
+  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey == devKey ? true : false; });
+  if (Array.isArray(existingRow)) existingRow = existingRow[0];
+  const existingObj = existingRow.data();
   const differences = difference(existingObj, shelly);
   if (differences.length === 0) {
-    console.log("no differnces in update event");
+    console.log("no differnces in refresh event");
   } else {
     //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
     let noVisibleCols = true;
@@ -385,54 +413,78 @@ ssesource.addEventListener('shellyUpdate', message => {
         break;
       }
     }
-    if (existingObj) {
-      _.merge(existingObj, shelly);
-      //existingObj.givenname = Math.random();
-      //shellyTableObj.rows().deselect();
-      existingRow.invalidate().draw();
-      //existingRow.select();
+    if (existingRow) {
+      existingRow.data(shelly).draw();
     } else {
-      //    shellylist[devKey] = shelly;
-      shellyTableObj.row.add(shelly).draw();
+      let newRow = shellyTableObj.row.add(shelly);
+      newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+      if (Array.isArray(newRow)) newRow = newRow[0];
+      console.log(`Got Refresh that was new for row ${newRow.id}`);
+      $.ajax({
+        url: "api/shelly/" + devKey
+      }).done(function (data) {
+        newRow.data(data).draw();
+      })
     }
-    //document.querySelector('#events').innerHTML = message.data;
   }
 }, false);
-ssesource.addEventListener('shellyNotify', message => {
-  console.log('Got Notify');
+ssesource.addEventListener('shellyUpdate', message => {
   const shelly = JSON.parse(message.data);
   const devKey = deviceKey(shelly.type, shelly.id);
-  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-  const existingObj = existingRow.data()[0];
+  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+  if (Array.isArray(existingRow)) existingRow = existingRow[0];
+  const existingObj = existingRow.data();
 
   //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
   if (existingRow.columns(shelly.prop + ':name')) {
     if (existingObj) {
+      console.log('Got Update that was a merge');
       _.merge(existingObj, shelly);
       if (shelly.prop) {
         existingObj[shelly.prop] = shelly.newValue;
       }
     } else {
-      //    shellylist[devKey] = shelly;
-      shellyTableObj.row.add(shelly).draw();
+      let newRow = shellyTableObj.row.add(shelly);
+      newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+      if (Array.isArray(newRow)) newRow = newRow[0];
+      console.log(`Got Update that was new for row ${newRow.id}`);
+      $.ajax({
+        url: "api/shelly/" + devKey
+      }).done(function (data) {
+        newRow.data(data).draw();
+      })
     }
     //document.querySelector('#events').innerHTML = message.data;
   }
 }, false);
 ssesource.addEventListener('shellyCreate', message => {
-  console.log('Got Create');
   const shelly = JSON.parse(message.data);
-  //  const devKey = deviceKey(shelly.type, shelly.id);
-  //  shellylist[devKey] = shelly;
-  shellyTableObj.row.add(shelly).draw();
-  //  document.querySelector('#events').innerHTML = message.data;
+  const devKey = deviceKey(shelly.type, shelly.id);
+  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+  if (Array.isArray(existingRow)) existingRow = existingRow[0];
+  if (existingRow) {
+    console.log('Got Create that was a merge');
+    const existingObj = existingRow.data();
+    _.merge(existingObj, shelly);
+    existingRow.draw();
+  } else {
+    let newRow = shellyTableObj.row.add(shelly);
+    newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+    if (Array.isArray(newRow)) newRow = newRow[0];
+    console.log(`Got Create that was new for row ${newRow.id}`);
+    $.ajax({
+      url: "api/shelly/" + devKey
+    }).done(function (data) {
+      newRow.data(data).draw();
+    })
+  }
 }, false);
 ssesource.addEventListener('shellyRemove', message => {
   console.log('Got Remove');
   const shelly = JSON.parse(message.data);
-  const existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
-  const existingObj = existingRow.data();
-  if (existingObj) {
+  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
+  if (Array.isArray(existingRow)) existingRow = existingRow[0];
+  if (existingRow) {
     existingRow.remove();
   }
 }, false);

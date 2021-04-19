@@ -1,7 +1,7 @@
 {
   "name": "shelly-admin",
   "description": "Shelly Admin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": "Max Lyth",
   "private": true,
   "main": "main.js",
@@ -10,10 +10,11 @@
     "debug": "nodemon --inspect ./bin/www",
     "electron": "electron .",
     "package": "electron-forge package",
-    "sign": "electron-packager . \"Shelly Admin\" --platform=darwin --arch=x64 --app-bundle-id=\"com.maxlyth.shellyadmin\" --app-version=\"0.1.12\" --build-version=\"0.1.12\" --osx-sign",
+    "sign": "electron-packager . \"Shelly Admin\" --platform=darwin --arch=x64 --app-bundle-id=\"com.maxlyth.shellyadmin\" --app-version=\"0.2.2\" --build-version=\"0.2.2\" --osx-sign",
     "make": "electron-forge make"
   },
   "dependencies": {
+    "assert": "^2.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",

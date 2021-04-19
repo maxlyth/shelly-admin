@@ -41,38 +41,37 @@ function shellyExtract(device) {
   }
 }
 
+function processStatus(device, newStatus) {
+  const devicekey = deviceKey(device.type, device.id);
+  //console.log('Received new polled status for ', devicekey);
 
-function pollStatus(device) {
-  function processStatus(device, newStatus) {
-    const devicekey = deviceKey(device.type, device.id);
-    //console.log('Received new polled status for ', devicekey);
-
-    const existingCoAPDevice = shellycoaplist[devicekey];
-    if (_.isNil(existingCoAPDevice)) {
-      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating status');
-      return;
-    }
-    const existingDevice = shellylist[devicekey];
-    if (_.isNil(existingDevice)) {
-      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating status');
-      return;
-    }
-    let newExtraction = shellyExtract(device);
-    newExtraction.status = newStatus;
-    newExtraction.mqtt_connected = newStatus.mqtt.connected;
-    newExtraction.rssi = newStatus.wifi_sta.rssi;
-    newExtraction.fw['hasupdate'] = newStatus.update.has_update;
-    newExtraction.fw['new'] = newStatus.update.new_version;
-    newExtraction = _.merge(existingDevice, newExtraction);
-    const differences = _.difference(shellylist[devicekey], newExtraction);
-    if (differences.length === 0) {
-      //console.log('Found ZERO differences when updating status. Ignoring SSE event');
-      return;
-    }
-    console.log('Found DIFFERENCES', differences, 'when updating status so sending SSE event');
-    shellylist[devicekey] = newExtraction;
-    sse.send(newExtraction, 'shellyUpdate');
+  const existingCoAPDevice = shellycoaplist[devicekey];
+  if (_.isNil(existingCoAPDevice)) {
+    console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating status');
+    return;
   }
+  const existingDevice = shellylist[devicekey];
+  if (_.isNil(existingDevice)) {
+    console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating status');
+    return;
+  }
+  let newExtraction = shellyExtract(device);
+  newExtraction.status = newStatus;
+  newExtraction.mqtt_connected = newStatus.mqtt.connected;
+  newExtraction.rssi = newStatus.wifi_sta.rssi;
+  newExtraction.fw['hasupdate'] = newStatus.update.has_update;
+  newExtraction.fw['new'] = newStatus.update.new_version;
+  newExtraction = _.merge(existingDevice, newExtraction);
+  const differences = _.difference(shellylist[devicekey], newExtraction);
+  if (differences.length === 0) {
+    //console.log('Found ZERO differences when updating status. Ignoring SSE event');
+    return;
+  }
+  console.log('Found DIFFERENCES', differences, 'when updating status so sending SSE event');
+  shellylist[devicekey] = newExtraction;
+  sse.send(newExtraction, 'shellyRefresh');
+}
+function pollStatus(device) {
   try {
     device.getStatus?.().then((newStatus) => {
       try {
@@ -88,37 +87,37 @@ function pollStatusTimer() {
 }
 
 
-function pollSettings(device) {
-  function processSettings(device, newSettings) {
-    const devicekey = deviceKey(device.type, device.id);
-    //console.log('Received new polled settings for ', devicekey);
-    const existingCoAPDevice = shellycoaplist[devicekey];
-    if (_.isNil(existingCoAPDevice)) {
-      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating settings');
-      return;
-    }
-    //  var existingDevice = _.find(shellylist, function (o) { return o.devicekey === devicekey; });
-    const existingDevice = shellylist[devicekey];
-    if (_.isNil(existingDevice)) {
-      console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating settings');
-      return;
-    }
-    let newExtraction = shellyExtract(device);
-    newExtraction.settings = newSettings;
-    newExtraction.fw['current'] = newSettings.fw;
-    newExtraction.givenname = newSettings.name;
-    newExtraction.ssid = newSettings.wifi_sta.ssid;
-    newExtraction.mqtt_enable = newSettings.mqtt.enable;
-    newExtraction = _.merge(existingDevice, newExtraction);
-    const differences = _.difference(shellylist[devicekey], newExtraction);
-    if (differences.length === 0) {
-      //console.log('Found ZERO differences when updating settings. Ignoring SSE event');
-      return;
-    }
-    console.log('Found DIFFERENCES', differences, 'when updating settings so sendding SSE event');
-    shellylist[devicekey] = newExtraction;
-    sse.send(newExtraction, 'shellyUpdate');
+function processSettings(device, newSettings) {
+  const devicekey = deviceKey(device.type, device.id);
+  //console.log('Received new polled settings for ', devicekey);
+  const existingCoAPDevice = shellycoaplist[devicekey];
+  if (_.isNil(existingCoAPDevice)) {
+    console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in CoAP list when updating settings');
+    return;
   }
+  //  var existingDevice = _.find(shellylist, function (o) { return o.devicekey === devicekey; });
+  const existingDevice = shellylist[devicekey];
+  if (_.isNil(existingDevice)) {
+    console.error('SHOULD NOT BE HERE! Device ', devicekey, ' did not exist in shellylist when updating settings');
+    return;
+  }
+  let newExtraction = shellyExtract(device);
+  newExtraction.settings = newSettings;
+  newExtraction.fw['current'] = newSettings.fw;
+  newExtraction.givenname = newSettings.name;
+  newExtraction.ssid = newSettings.wifi_sta.ssid;
+  newExtraction.mqtt_enable = newSettings.mqtt.enable;
+  newExtraction = _.merge(existingDevice, newExtraction);
+  const differences = _.difference(shellylist[devicekey], newExtraction);
+  if (differences.length === 0) {
+    //console.log('Found ZERO differences when updating settings. Ignoring SSE event');
+    return;
+  }
+  console.log('Found DIFFERENCES', differences, 'when updating settings so sendding SSE event');
+  shellylist[devicekey] = newExtraction;
+  sse.send(newExtraction, 'shellyRefresh');
+}
+function pollSettings(device) {
   try {
     device.getSettings?.().then((newSettings) => {
       try {
@@ -137,10 +136,19 @@ shellies.on('discover', device => {
   // a new device has been discovered
   console.log('Discovered device with ID', device.id, 'and type', device.type);
   const devicekey = deviceKey(device.type, device.id);
+  device.forceUpdate = async function () {
+    const statusResponse = await this.getStatus();
+    processStatus(this, statusResponse);
+    const settingsResponse = await this.getSettings();
+    processSettings(this, settingsResponse);
+    return this;
+  }
   shellycoaplist[devicekey] = device;
-  shellylist[devicekey] = shellyExtract(device);
+  const extractedData = shellyExtract(device);
+  shellylist[devicekey] = extractedData;
   setTimeout(pollSettingsTimer.bind({ device: device }), Math.round(Math.random() * (2500)) + 500);
   setTimeout(pollStatusTimer.bind({ device: device }), Math.round(Math.random() * (2500)) + 500);
+  sse.send(extractedData, 'shellyCreate');
 
   device.on('change', (prop, newValue, oldValue) => {
     // a property on the device has changed
@@ -176,5 +184,6 @@ function start(SSE) {
   shellies.start();
   return [shellylist, shellycoaplist];
 }
+
 
 module.exports = start;

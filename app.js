@@ -50,7 +50,7 @@ app.use(path.join(process.env.PREFIX, '/proxy/:addr'), proxy(function (req, res)
     return data;
   }
 }));
-app.get('/events', sse.init);
+app.get(path.join(process.env.PREFIX, '/events'), sse.init);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
