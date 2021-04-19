@@ -1,7 +1,7 @@
 {
   "name": "shelly-admin",
   "description": "Shelly Admin",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "Max Lyth",
   "private": true,
   "main": "main.js",
