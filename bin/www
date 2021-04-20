@@ -11,6 +11,8 @@ var host = process.env.HOST = normalizeHost(process.env.HOST || 'localhost');
 process.env.TRUSTPROXY = process.env.TRUSTPROXY || 'loopback';
 process.env.UIMODE = process.env.UIMODE || 'light';
 process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
+process.env.SHELLYUSER = process.env.SHELLYUSER || '';
+process.env.SHELLYPW = process.env.SHELLYPW || '';
 
 /**
 * Module dependencies.
@@ -19,8 +21,6 @@ process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
 var expressapp = require('../app');
 var debug = require('debug')('shelly-admin:server');
 var http = require('http');
-
-
 
 
 /**

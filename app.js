@@ -6,18 +6,17 @@ const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const cors = require('cors');
-//const helmet = require('helmet');
 const proxy = require('express-http-proxy');
 const express = require('express');
 const SSE = require('express-sse');
 const morgan = require('morgan');
 const shellycoap = require('./shelly-coap.js')
+const authHeader = require('basic-auth-header');
 
 const indexRouter = require('./routes/index');
 const apiRouter = require('./routes/api');
 const app = express();
-const sse = new SSE();
-[app.locals.shellylist, app.locals.shellycoaplist] = shellycoap(sse);
+const sse = new SSE({}, { isSerialized: false, initialEvent: 'shellysLoad' });
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -31,7 +30,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(process.env.PREFIX, express.static(path.join(__dirname, 'public')));
-//app.use(helmet());
 // Add handler for client to be able to request no compression. This is required for express-sse
 app.use(compression({
   filter: function (req, res) {
@@ -40,17 +38,31 @@ app.use(compression({
 }));
 app.use(path.join(process.env.PREFIX, '/'), indexRouter);
 app.use(path.join(process.env.PREFIX, '/api'), apiRouter);
-app.use(path.join(process.env.PREFIX, '/proxy/:addr'), proxy(function (req, res) {
-  const addr = req.params.addr;
-  return 'http://' + addr;
+app.use(path.join(process.env.PREFIX, '/proxy/:devicekey'), proxy(function (req, res) {
+  const devicekey = req.params.devicekey;
+  const shelly = app.locals.shellylist[devicekey];
+  return 'http://' + shelly.ip;
 }, {
   userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
     let data = proxyResData.toString('utf8');
     data = data.replace(',url:"/"+url,', ',url:""+url,');
     return data;
+  },
+  proxyReqOptDecorator: function (proxyReqOpts, srcReq) {
+    const devicekey = proxyReqOpts.params.devicekey;
+    const shelly = app.locals.shellylist[devicekey];
+    if (shelly.auth) {
+      console.warn('Need to add auth headers for this device');
+      proxyReqOpts.headers['Authorization'] = authHeader(process.env.SHELLYUSER, process.env.SHELLYPW);
+    }
+    return proxyReqOpts;
   }
-}));
+}
+));
 app.get(path.join(process.env.PREFIX, '/events'), sse.init);
+
+[app.locals.shellylist, app.locals.shellycoaplist] = shellycoap(sse);
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

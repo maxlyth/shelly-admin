@@ -6,8 +6,30 @@
 let shellyTableObj = undefined;
 const shellylist = [{}];
 const detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
+const ssesource = new EventSource('events');
 
 const deviceKey = (type, id) => `${type}-${id}`;
+
+/**
+ * Deep diff between two object, using lodash
+ * @param  {Object} object Object compared
+ * @param  {Object} base   Object to compare with
+ * @return {Object}        Return a new object who represent the diff
+ */
+function difference(object, base) {
+  return _.transform(object, (result, value, key) => {
+    if (!_.isEqual(value, base[key])) {
+      result[key] = _.isObject(value) && _.isObject(base[key]) ? difference(value, base[key]) : value;
+    }
+  });
+}
+
+// eslint-disable-next-line no-unused-vars
+function handleShellyDirect(deviceKey) {
+  console.info("Display shelly iFrame for " + deviceKey);
+  $('#shellyAccessModal iframe').attr('src', "proxy/" + deviceKey + "/");
+  $('#shellyAccessModal').modal('show');
+}
 
 $(document).ready(function () {
   $.fn.dataTable.ext.errMode = 'none';
@@ -48,7 +70,23 @@ $(document).ready(function () {
         "responsivePriority": 1,
         "className": "text-nowrap text-truncate",
         "render": function (data, _type, _row) {
-          return `<div class="shellydirect" onclick="handleShellyDirect('${data}')" data-toggle="tooltip" title="Open Shelly Web Admin"><i class="fas fa-rocket"></i>&nbsp;${data}</div>`;
+          let result = data;
+          if (_type == 'display') {
+            let auth = _row['auth'] || false;
+            if (auth) {
+              console.info(`Device need authentication`);
+            }
+            let locked = _row['locked'] || false;
+            result = '<span' + (auth ? (' style="color:' + (locked ? "red" : "green") + '"') : '') + '>';
+            result += auth ? `<i class="fa fa-lock" aria-hidden="true"></i>` : `<i class="fa fa-unlock-alt" aria-hidden="true"></i>`;
+            result += '</span>&nbsp;';
+            if (_row.locked === false) {
+              result += `<span class="shellydirect" onclick="handleShellyDirect('${_row.devicekey}')" data-toggle="tooltip" title="Open Shelly Web Admin">${data}&nbsp;<i class="fas fa-rocket"></i></span>`;
+            } else {
+              result += `<span data-toggle="tooltip" title="Wrong password">${data}&nbsp;</span>`;
+            }
+          }
+          return result;
         },
         "type": "ip-address"
       },
@@ -109,7 +147,7 @@ $(document).ready(function () {
         "data": "lastSeenHuman",
         "name": "lastseen-human",
         "title": "LastSeen",
-        "width": 100,
+        "width": 20,
         "className": "text-nowrap text-truncate",
         "responsivePriority": 8040,
         "type": "natural-time-delta"
@@ -132,8 +170,7 @@ $(document).ready(function () {
         "render": function (data, _type, _row, _meta) {
           let result = '';
           data ??= {};
-          data.current ??= "/-";
-          let currentName = data.current.split('/')[1].split('-')[0];
+          let currentName = (/([^/]*\/)([^-]*)(-.*)/g.exec(data?.current + "/-"))[2];
           result = currentName;
           if (_type == 'display') {
             result = '<span>' + currentName + '</span>';
@@ -142,11 +179,11 @@ $(document).ready(function () {
             if (currentCell) currentContent = currentCell.node();
             if (currentContent) currentContent = $(currentContent);
             if (currentContent) {
-              if ($('span[updating]', currentContent).length > 0) {
+              if ($('span[upgrading]', currentContent).length > 0) {
                 result = currentContent.html();
                 return result;
               }
-              if ($('span[updated]', currentContent).length > 0) {
+              if ($('span[upgraded]', currentContent).length > 0) {
                 result = currentContent.html();
                 return result;
               }
@@ -154,7 +191,7 @@ $(document).ready(function () {
             if (data.hasupdate || false) {
               data.new ??= '';
               const devicekey = _row['devicekey'];
-              result = `<span onclick="handleShellyUpdate(this, '${devicekey}');" data-toggle="tooltip" title="Start firmware update" data-content="${data.new}">${currentName}&nbsp;&nbsp;`;
+              result = `<span onclick="handleShellyUpgrade(this, '${devicekey}');" data-toggle="tooltip" title="Start firmware upgrade" data-content="${data.new}">${currentName}&nbsp;&nbsp;`;
               result += `<i class="fas fa-sync-alt" style="color:red"></i></span>`;
             }
           }
@@ -295,27 +332,76 @@ $(document).ready(function () {
   }
   )
 
-  // Empty the Datable of all rows and load a fresh set of devices from server
-  $.ajax({
-    url: "api/shellys"
-  }).done(function (data) {
+  ssesource.addEventListener('open', message => {
+    console.log(`SSE: open`);
+  }, false);
+  ssesource.addEventListener('shellysLoad', message => {
+    console.log('SSE: shellysLoad');
+    const shellys = JSON.parse(message.data)[0];
     shellyTableObj.clear();
-    data.forEach(element => {
-      shellyTableObj.row.add(element)
-    });
-    shellyTableObj.draw();
-  });
-
+    for (const [, shelly] of Object.entries(shellys)) {
+      shellyTableObj.row.add(shelly);
+    }
+    shellyTableObj.columns.adjust().draw();
+  }, false);
+  ssesource.addEventListener('shellyUpdate', message => {
+    const shelly = JSON.parse(message.data);
+    const devKey = deviceKey(shelly.type, shelly.id);
+    let existingRow = shellyTableObj.row(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+    if (existingRow.length > 0) {
+      const existingObj = existingRow.data();
+      const differences = difference(existingObj, shelly);
+      if (differences.length === 0) {
+        console.log(`SSE: shellyUpdate no changes for ${devKey}`);
+      } else {
+        let noVisibleCols = true;
+        for (let col in differences) {
+          if (existingRow.columns(col + ':name')[0].length > 0) {
+            // eslint-disable-next-line no-unused-vars
+            noVisibleCols = false;
+            break;
+          }
+        }
+        if (noVisibleCols == false) {
+          //console.log(`SSE: shellyUpdate including visible columns for ${devKey}`);
+          existingRow.data(shelly).draw();
+        } else {
+          //console.log(`SSE: shellyUpdate only for invisible columns for ${devKey}`);
+          existingRow.data(shelly);
+        }
+      }
+    } else {
+      console.log(`SSE: shellyUpdate that was new for ${devKey}`);
+      shellyTableObj.row.add(shelly).draw();
+    }
+  }, false);
+  ssesource.addEventListener('shellyCreate', message => {
+    console.log('SSE: shellyCreate');
+    const shelly = JSON.parse(message.data);
+    const devKey = deviceKey(shelly.type, shelly.id);
+    let existingRow = shellyTableObj.row(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
+    if (existingRow.length > 0) {
+      console.log('Got Create that was a merge');
+      existingRow.data(shelly).draw();
+    } else {
+      console.log(`Got Create that was new for row ${devKey}`);
+      shellyTableObj.row.add(shelly).draw();
+    }
+  }, false);
+  ssesource.addEventListener('shellyRemove', message => {
+    console.log('SSE: shellyRemove');
+    const shelly = JSON.parse(message.data);
+    let existingRow = shellyTableObj.row(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
+    if (existingRow) {
+      existingRow.remove().draw();
+    }
+  }, false);
+  ssesource.addEventListener('error', message => {
+    console.log('SSE: error');
+  }, false);
 });
 
-// eslint-disable-next-line no-unused-vars
-function handleShellyDirect(shellyIP) {
-  console.info("Display shelly iFrame for " + shellyIP);
-  $('#shellyAccessModal iframe').attr('src', "proxy/" + shellyIP + "/");
-  $('#shellyAccessModal').modal('show');
-}
-
-function pollUpdateTimer() {
+function pollUpgradeTimer() {
   var element = this.element;
   var devicekey = this.devicekey;
   var tableCell = this.tableCell;
@@ -326,9 +412,9 @@ function pollUpdateTimer() {
     .done(function (data) {
       console.info(`Got update status of ${data} for ${devicekey}`);
       if (data == 'idle') {
-        tableCell.html(`<span updated><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
+        tableCell.html(`<span upgraded><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
         setTimeout(function () {
-          $('[updated]', tableCell).removeAttr('updated');
+          $('[upgraded]', tableCell).removeAttr('upgraded');
           $.ajax({
             url: "api/shelly/" + devicekey
           }).done(function (data) {
@@ -343,151 +429,36 @@ function pollUpdateTimer() {
       }
       if (data != curStatus) {
         curStatus = data;
-        tableCell.html(`<span updating><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
+        tableCell.html(`<span upgrading><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
       }
-      setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+      setTimeout(pollUpgradeTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
       console.warning(`Updatestatus failed with ${data} for ${devicekey}`);
       if ((Date.now() - startTime) > 60000) {
         tableCell.html(originalContent);
       } else {
-        setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+        setTimeout(pollUpgradeTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
       }
     });
 }
 
 // eslint-disable-next-line no-unused-vars
-function handleShellyUpdate(element, devicekey) {
-  console.info("Start firmware update for " + devicekey);
+function handleShellyUpgrade(element, devicekey) {
+  console.info("Start firmware upgrade for " + devicekey);
   let tableCell = $(element).parent();
   let originalContent = tableCell.html();
   let startTime = Date.now();
   let curStatus = 'Requesting…';
   $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
-  tableCell.html(`<span updating>${curStatus}</span>`);
+  tableCell.html(`<span upgrading>${curStatus}</span>`);
   $.ajax({ url: "api/update/" + devicekey })
     .done(function (data) {
-      console.info("Requested firmware update for " + devicekey);
-      setTimeout(pollUpdateTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
+      console.info("Requested firmware upgrade for " + devicekey);
+      setTimeout(pollUpgradeTimer.bind({ element, devicekey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
       tableCell.html(originalContent);
-      console.error("Failed to request firmware update for " + devicekey);
+      console.error("Failed to request firmware upgrade for " + devicekey);
     });
 }
-
-/**
- * Deep diff between two object, using lodash
- * @param  {Object} object Object compared
- * @param  {Object} base   Object to compare with
- * @return {Object}        Return a new object who represent the diff
- */
-function difference(object, base) {
-  return _.transform(object, (result, value, key) => {
-    if (!_.isEqual(value, base[key])) {
-      result[key] = _.isObject(value) && _.isObject(base[key]) ? difference(value, base[key]) : value;
-    }
-  });
-}
-
-const ssesource = new EventSource('events');
-ssesource.addEventListener('shellyRefresh', message => {
-  console.log('Got Refresh');
-  const shelly = JSON.parse(message.data);
-  const devKey = deviceKey(shelly.type, shelly.id);
-  if (_.isNil(shellyTableObj)) return;
-  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey == devKey ? true : false; });
-  if (Array.isArray(existingRow)) existingRow = existingRow[0];
-  const existingObj = existingRow.data();
-  const differences = difference(existingObj, shelly);
-  if (differences.length === 0) {
-    console.log("no differnces in refresh event");
-  } else {
-    //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
-    let noVisibleCols = true;
-    for (let col in differences) {
-      if (existingRow.columns(col + ':name')[0].length > 0) {
-        // eslint-disable-next-line no-unused-vars
-        noVisibleCols = false;
-        break;
-      }
-    }
-    if (existingRow) {
-      existingRow.data(shelly).draw();
-    } else {
-      let newRow = shellyTableObj.row.add(shelly);
-      newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-      if (Array.isArray(newRow)) newRow = newRow[0];
-      console.log(`Got Refresh that was new for row ${newRow.id}`);
-      $.ajax({
-        url: "api/shelly/" + devKey
-      }).done(function (data) {
-        newRow.data(data).draw();
-      })
-    }
-  }
-}, false);
-ssesource.addEventListener('shellyUpdate', message => {
-  const shelly = JSON.parse(message.data);
-  const devKey = deviceKey(shelly.type, shelly.id);
-  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-  if (Array.isArray(existingRow)) existingRow = existingRow[0];
-  const existingObj = existingRow.data();
-
-  //  _.find(shellylist, function (o) { return o.devicekey === devKey; });
-  if (existingRow.columns(shelly.prop + ':name')) {
-    if (existingObj) {
-      console.log('Got Update that was a merge');
-      _.merge(existingObj, shelly);
-      if (shelly.prop) {
-        existingObj[shelly.prop] = shelly.newValue;
-      }
-    } else {
-      let newRow = shellyTableObj.row.add(shelly);
-      newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-      if (Array.isArray(newRow)) newRow = newRow[0];
-      console.log(`Got Update that was new for row ${newRow.id}`);
-      $.ajax({
-        url: "api/shelly/" + devKey
-      }).done(function (data) {
-        newRow.data(data).draw();
-      })
-    }
-    //document.querySelector('#events').innerHTML = message.data;
-  }
-}, false);
-ssesource.addEventListener('shellyCreate', message => {
-  const shelly = JSON.parse(message.data);
-  const devKey = deviceKey(shelly.type, shelly.id);
-  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-  if (Array.isArray(existingRow)) existingRow = existingRow[0];
-  if (existingRow) {
-    console.log('Got Create that was a merge');
-    const existingObj = existingRow.data();
-    _.merge(existingObj, shelly);
-    existingRow.draw();
-  } else {
-    let newRow = shellyTableObj.row.add(shelly);
-    newRow = newRow.rows(function (_idx, data, _node) { return data.devicekey === devKey ? true : false; });
-    if (Array.isArray(newRow)) newRow = newRow[0];
-    console.log(`Got Create that was new for row ${newRow.id}`);
-    $.ajax({
-      url: "api/shelly/" + devKey
-    }).done(function (data) {
-      newRow.data(data).draw();
-    })
-  }
-}, false);
-ssesource.addEventListener('shellyRemove', message => {
-  console.log('Got Remove');
-  const shelly = JSON.parse(message.data);
-  let existingRow = shellyTableObj.rows(function (_idx, data, _node) { return data.devicekey === shelly.devicekey ? true : false; });
-  if (Array.isArray(existingRow)) existingRow = existingRow[0];
-  if (existingRow) {
-    existingRow.remove();
-  }
-}, false);
-ssesource.addEventListener('error', message => {
-  console.log('Got SSE error');
-}, false);
