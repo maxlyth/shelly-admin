@@ -14,6 +14,7 @@
     "make": "electron-forge make"
   },
   "dependencies": {
+    "acorn-globals": "^6.0.0",
     "assert": "^2.0.0",
     "basic-auth-header": "^1.0.1",
     "coiot-coap": "^1.0.0",
@@ -30,6 +31,8 @@
     "javascript-time-ago": "^2.3.4",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
+    "node-persist": "^3.1.0",
+    "poll-retry": "^0.0.3",
     "pretty-bytes": "^1.0.4",
     "pug": "^3.0.2",
     "shellies": "^1.5.0"

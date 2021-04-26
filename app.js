@@ -16,7 +16,7 @@ const authHeader = require('basic-auth-header');
 const indexRouter = require('./routes/index');
 const apiRouter = require('./routes/api');
 const app = express();
-const sse = new SSE({}, { isSerialized: false, initialEvent: 'shellysLoad' });
+const sse = new SSE([], { isSerialized: false, initialEvent: 'shellysLoad' });
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -38,9 +38,9 @@ app.use(compression({
 }));
 app.use(path.join(process.env.PREFIX, '/'), indexRouter);
 app.use(path.join(process.env.PREFIX, '/api'), apiRouter);
-app.use(path.join(process.env.PREFIX, '/proxy/:devicekey'), proxy(function (req, res) {
-  const devicekey = req.params.devicekey;
-  const shelly = app.locals.shellylist[devicekey];
+app.use(path.join(process.env.PREFIX, '/proxy/:deviceKey'), proxy(function (req, res) {
+  const deviceKey = req.params.deviceKey;
+  const shelly = app.locals.shellylist[deviceKey];
   return 'http://' + shelly.ip;
 }, {
   userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
@@ -49,8 +49,8 @@ app.use(path.join(process.env.PREFIX, '/proxy/:devicekey'), proxy(function (req,
     return data;
   },
   proxyReqOptDecorator: function (proxyReqOpts, srcReq) {
-    const devicekey = proxyReqOpts.params.devicekey;
-    const shelly = app.locals.shellylist[devicekey];
+    const deviceKey = proxyReqOpts.params.deviceKey;
+    const shelly = app.locals.shellylist[deviceKey];
     if (shelly.auth) {
       console.warn('Need to add auth headers for this device');
       proxyReqOpts.headers['Authorization'] = authHeader(process.env.SHELLYUSER, process.env.SHELLYPW);
@@ -61,12 +61,11 @@ app.use(path.join(process.env.PREFIX, '/proxy/:devicekey'), proxy(function (req,
 ));
 app.get(path.join(process.env.PREFIX, '/events'), sse.init);
 
-[app.locals.shellylist, app.locals.shellycoaplist] = shellycoap(sse);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
 });
+
 // error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
@@ -78,5 +77,7 @@ app.use(function (err, req, res, next) {
   res.render('error');
 });
 
+//app.locals.shellylist = await shellycoap(sse);
+shellycoap(app, sse);
 
 module.exports = app;

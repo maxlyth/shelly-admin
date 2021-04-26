@@ -13,6 +13,7 @@ process.env.UIMODE = process.env.UIMODE || 'light';
 process.env.PREFIX = normalizePrefix(process.env.PREFIX || '');
 process.env.SHELLYUSER = process.env.SHELLYUSER || '';
 process.env.SHELLYPW = process.env.SHELLYPW || '';
+process.env.PERSISTPATH = process.env.PERSISTPATH || undefined;
 
 /**
 * Module dependencies.

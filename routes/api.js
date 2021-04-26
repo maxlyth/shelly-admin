@@ -7,7 +7,7 @@ const path = require('path');
 const prettyBytes = require('pretty-bytes');
 const humanizeDuration = require("humanize-duration");
 const encode = require("html-entities").encode;
-var assert = require('assert');
+const assert = require('assert');
 
 const api = express.Router();
 
@@ -15,14 +15,14 @@ const api = express.Router();
 api.get('/shellys', function (req, res) {
   try {
     const shellylist = req.app.locals.shellylist;
-    let result = [];
-    for (const shelly in shellylist) {
-      var extractedData = { ...shellylist[shelly] };
-      delete extractedData?.settings;
-      delete extractedData?.status;
-      result.push(extractedData)
+    let resultlist = () => {
+      let result = [];
+      for (const shelly in shellylist) {
+        result.push(shelly.sseobj);
+      }
+      return result;
     }
-    res.send(result);
+    res.send(resultlist);
   } catch (err) {
     const response = `Get shellys failed with error ${err.message}...`;
     console.error(response);
@@ -30,29 +30,24 @@ api.get('/shellys', function (req, res) {
   }
 });
 
-api.get('/shelly/:devicekey', async function (req, res) {
+api.get('/shelly/:deviceKey', async function (req, res) {
   try {
     const shellylist = req.app.locals.shellylist;
-    const shellycoaplist = req.app.locals.shellycoaplist;
-    const devicekey = req.params.devicekey;
-    const device = shellycoaplist[devicekey];
-    assert(_.isObject(device));
-    await device.forceUpdate();
-    const shelly = shellylist[devicekey];
-    var extractedData = { ...shelly };
-    delete extractedData?.settings;
-    delete extractedData?.status;
-    res.send(extractedData);
+    const deviceKey = req.params.deviceKey;
+    const shelly = shellylist[deviceKey];
+    assert(_.isObject(shelly));
+    await shelly.forceUpdate();
+    res.send(shelly.basicJSON());
   } catch (err) {
-    const response = `Get shelly failed with error ${err.message}... Can not find Shelly matching key:${req.params.devicekey}`;
+    const response = `Get shelly failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
     console.error(response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
 
-api.get('/details/:devicekey', function (req, res) {
-  function getShellyDetail(device, key) {
-    let result = _.get(device, key, null);
+api.get('/details/:deviceKey', function (req, res) {
+  function getShellyDetail(shelly, key) {
+    let result = _.get(shelly, key, null);
     switch (key) {
       case 'statusCache?.ram_free':
       case 'statusCache?.ram_total':
@@ -102,45 +97,56 @@ api.get('/details/:devicekey', function (req, res) {
   try {
     req.app.locals._ = _;
     req.app.locals.getShellyDetail = getShellyDetail;
-    const shellycoaplist = req.app.locals.shellycoaplist;
-    const shellylist = req.app.locals.shellylist;
-    const shelly = shellylist[req.params.devicekey];
-    const device = shellycoaplist[req.params.devicekey];
-    assert(_.isObject(shelly));
-    const imagePath = path.join(__dirname, '..', 'public', 'images', 'shelly-devices', shelly.type + '.png');
-    const imageName = (fs.existsSync(imagePath)) ? shelly.type + '.png' : 'Unknown.png';
-    res.render('details', { 'title': 'Shelly Details', 'device': device, 'imageName': imageName });
+    const shelly = req.app.locals.shellylist[req.params.deviceKey];
+    let shellyDetails = { ...shelly };
+    const imagePath = path.join(__dirname, '..', 'public', 'images', 'shelly-devices', shellyDetails.type + '.png');
+    const imageName = (fs.existsSync(imagePath)) ? shellyDetails.type + '.png' : 'Unknown.png';
+    res.render('details', { 'title': 'Shelly Details', 'shelly': shellyDetails, 'imageName': imageName });
   } catch (err) {
-    const response = `Get details failed with error ${err.message}... Can not find Shelly matching key:${req.params.devicekey}`;
+    const response = `Get details failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
     console.error(response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
 
-api.get('/update/:devicekey', async function (req, res) {
+api.get('/upgrade/:deviceKey', async function (req, res) {
   try {
-    const shellycoaplist = req.app.locals.shellycoaplist;
-    const device = shellycoaplist[req.params.devicekey];
-    assert(_.isObject(device));
-    await device.request.get(`${device.host}/ota?update=true`);
+    const shellylist = req.app.locals.shellylist;
+    const shelly = shellylist[req.params.deviceKey];
+    assert(_.isObject(shelly));
+    await shelly.coapdevice.request.get(`${shelly.ip}/ota?update=true`);
     res.send("OK");
   } catch (err) {
-    const response = `Update failed with error ${err.message}... Can not find Shelly matching key:${req.params.devicekey}`;
+    const response = `Update failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
     console.error(response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
 
-api.get('/updatestatus/:devicekey', async function (req, res) {
+api.get('/update/:deviceKey', async function (req, res) {
   try {
-    const shellycoaplist = req.app.locals.shellycoaplist;
-    const device = shellycoaplist[req.params.devicekey];
-    assert(_.isObject(device));
-    const statusResponse = await device.getStatus();
-    console.log(`Got update status of '${statusResponse.update.status}' for device ${req.params.devicekey}`);
+    const shellylist = req.app.locals.shellylist;
+    const shelly = shellylist[req.params.deviceKey];
+    assert(_.isObject(shelly));
+    await shelly.coapdevice.request.get(`${shelly.ip}/ota?update=true`);
+    res.send("OK");
+  } catch (err) {
+    const response = `Update failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
+    console.error(response);
+    res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
+  }
+});
+
+api.get('/updatestatus/:deviceKey', async function (req, res) {
+  try {
+    const shellylist = req.app.locals.shellylist;
+    const shelly = shellylist[req.params.deviceKey];
+    assert(_.isObject(shelly));
+    const statusResponse = await shelly.coapdevice.getStatus();
+    console.log(`Got update status of '${statusResponse.update.status}' for device ${req.params.deviceKey}`);
     res.send(statusResponse.update.status);
   } catch (err) {
-    const response = `Status failed with error ${err.message}... Can not find Shelly matching key:${req.params.devicekey}`;
+    const response = `Status failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
     console.error(response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
