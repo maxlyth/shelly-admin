@@ -296,54 +296,44 @@ coIoTserver.on('status', (status) => {
 
 shellies.on('discover', device => {
   // a new device has been discovered
+  const deviceKey = makeDeviceKey(device.type, device.id);
+  let shelly = shellylist[deviceKey];
   try {
-    const deviceKey = makeDeviceKey(device.type, device.id);
-    let shelly = shellylist[deviceKey];
     if (_.isObject(shelly)) {
       //console.info(`Discovered existing device via CoaP with ID ${device.id} and type ${device.type}`);
-      shelly.coapDevice = device;
     } else {
       console.log(`Discovered new device via CoaP with ID ${device.id} and type ${device.type}`);
-      let shelly = new Shelly(device.type, device.id, device.host);
+      shelly = new Shelly(device.type, device.id, device.host);
       shellylist[deviceKey] = shelly;
-      shelly.coapDevice = device;
-      shelly.persist(storage);
-      shelly.ssesend(sse, 'shellyCreate');
     }
+    shelly.coapDevice = device;
+    shelly.persist(storage);
+    shelly.ssesend(sse, 'shellyCreate');
   } catch (err) { console.error(`Error: ${err.message} while processing discovered Shelly`); }
 
   device.on('change', (prop, newValue, oldValue) => {
     try {
       // a property on the device has changed
       const deviceKey = makeDeviceKey(device.type, device.id);
-      if (_.isObject(shellylist[deviceKey])) {
-        let shelly = shellylist[deviceKey];
-        shellylist[deviceKey] = shelly;
-        shelly.persist(storage);
-        shelly.ssesend(sse, 'shellyUpdate');
-      } else {
+      let shelly = shellylist[deviceKey];
+      if (!_.isObject(shellylist[deviceKey])) {
         console.log(`Discovered new device via CoaP with ID ${device.id} and type ${device.type}`);
         let shelly = new Shelly(device.type, device.id, device.host);
         shelly.coapDevice = device;
-        shelly.persist(storage);
-        shelly.ssesend(sse, 'shellyCreate');
       }
+      shelly.persist(storage);
+      shelly.ssesend(sse, 'shellyUpdate');
     } catch (err) { console.error(`Error: ${err.message} while handling change event`); }
   })
 
   device.on('offline', () => {
     try {
       const deviceKey = makeDeviceKey(device.type, device.id);
+      let shelly = shellylist.get(deviceKey);
       console.log(`Device with deviceKey ${deviceKey} went offline`)
-      try {
-        let shelly = shellylist.get(deviceKey);
-        shelly.online = false;
-        shelly.persist(storage);
-        shelly.ssesend(sse, 'shellyRemove');
-      } catch (err) { console.error(`Error: ${err.message} while sending remove`); }
-      if (_.isObject(shellylist[deviceKey])) {
-        //delete shellylist[deviceKey]
-      }
+      shelly.online = false;
+      shelly.persist(storage);
+      shelly.ssesend(sse, 'shellyRemove');
     } catch (err) { console.error(`Error: ${err.message} while handling offline event`); }
   })
 })
