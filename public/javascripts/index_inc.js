@@ -161,8 +161,8 @@ $(document).ready(function () {
         "responsivePriority": 8020
       },
       {
-        "data": "fw",
-        "name": "fw",
+        "data": "firmware",
+        "name": "firmware",
         "title": "Firmware",
         "width": "40px",
         "className": "text-nowrap text-truncate",
@@ -170,10 +170,9 @@ $(document).ready(function () {
         "render": function (data, _type, _row, _meta) {
           let result = '';
           data ??= {};
-          let currentName = (/([^/]*\/)([^-]*)(-.*)/g.exec(data?.current + "/-"))[2];
-          result = currentName;
+          result = data.curlong;
           if (_type == 'display') {
-            result = '<span>' + currentName + '</span>';
+            result = `<span data-toggle="tooltip" title="${data.curlong}">${data.curshort}</span>`;
             let [currentCell, currentContent] = [null, null];
             if (shellyTableObj) currentCell = shellyTableObj.cell(_meta.row, _meta.col);
             if (currentCell) currentContent = currentCell.node();
@@ -189,9 +188,9 @@ $(document).ready(function () {
               }
             }
             if (data.hasupdate || false) {
-              data.new ??= '';
+              data.newlong ??= '';
               const deviceKey = _row['deviceKey'];
-              result = `<span onclick="handleShellyUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Start firmware upgrade" data-content="${data.new}">${currentName}&nbsp;&nbsp;`;
+              result = `<span onclick="handleShellyUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Start firmware upgrade" data-content="${data.newlong}">${data.curshort}&nbsp;&nbsp;`;
               result += `<i class="fas fa-sync-alt" style="color:red"></i></span>`;
             }
           }

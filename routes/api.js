@@ -36,7 +36,8 @@ api.get('/shelly/:deviceKey', async function (req, res) {
     const deviceKey = req.params.deviceKey;
     const shelly = shellylist[deviceKey];
     assert(_.isObject(shelly));
-    await shelly.forceUpdate();
+    await shelly.statusPollfn();
+    await shelly.settingsPollfn();
     res.send(shelly.basicJSON());
   } catch (err) {
     const response = `Get shelly failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
@@ -98,6 +99,8 @@ api.get('/details/:deviceKey', function (req, res) {
     req.app.locals._ = _;
     req.app.locals.getShellyDetail = getShellyDetail;
     const shelly = req.app.locals.shellylist[req.params.deviceKey];
+    shelly.statusPollfn();
+    shelly.settingsPollfn();
     let shellyDetails = { ...shelly };
     const imagePath = path.join(__dirname, '..', 'public', 'images', 'shelly-devices', shellyDetails.type + '.png');
     const imageName = (fs.existsSync(imagePath)) ? shellyDetails.type + '.png' : 'Unknown.png';
@@ -142,7 +145,7 @@ api.get('/updatestatus/:deviceKey', async function (req, res) {
     const shellylist = req.app.locals.shellylist;
     const shelly = shellylist[req.params.deviceKey];
     assert(_.isObject(shelly));
-    const statusResponse = await shelly.coapdevice.getStatus();
+    const statusResponse = await shelly.statusPollfn(); //coapdevice.getStatus();
     console.log(`Got update status of '${statusResponse.update.status}' for device ${req.params.deviceKey}`);
     res.send(statusResponse.update.status);
   } catch (err) {
