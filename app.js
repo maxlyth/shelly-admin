@@ -45,7 +45,8 @@ app.use(path.join(process.env.PREFIX, '/proxy/:deviceKey'), proxy(function (req,
 }, {
   userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
     let data = proxyResData.toString('utf8');
-    data = data.replace(',url:"/"+url,', ',url:""+url,');
+    const regex = /,\s*url:\s*?"\/"\s*?\+\s*?url,/g;
+    data = data.replaceAll(regex, ', url: ""+url,');
     return data;
   },
   proxyReqOptDecorator: function (proxyReqOpts, srcReq) {
