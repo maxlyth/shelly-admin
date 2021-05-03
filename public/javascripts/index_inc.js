@@ -106,8 +106,6 @@ function showPreferencesDialog() {
         $.ajax({ url: "api/setpreferences", method: "POST", data: newCreds })
           .done(function (data) {
             $('#preferencesModal').modal('hide');
-          })
-          .fail(function (jqXHR, textStatus) {
           });
       });
       $('#preferencesModal').modal('show');
