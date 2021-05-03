@@ -33,6 +33,10 @@ block scripts
   script(defer src='javascripts/index_inc.js')
 
 block content
+  div#overlay.invisible
+    div.spinner
+    br
+    h5 Reconnecting…
   div.container-fluid.px-0.h-100(style={'font-family': 'Roboto, Noto, sans-serif'})
     nav.navbar.navbar-dark.px-2.bg-primary
       div.px-0.container-fluid.d-flex.justify-content-between
@@ -49,8 +53,9 @@ block content
             .dropdown-menu(aria-labelledby='dropdownMenuButton')
               a.dropdown-item(href='#') Reboot
               a.dropdown-item(href='#') Update firmware
+              a.dropdown-item(href='#') Change password
         div
-          button.btn.btn-dark.px-3.my-sm-0(type="button", data-toggle="modal" data-target="#preferencesModal") Preferences…
+          button#PreferencesButton.btn.btn-dark.px-3.my-sm-0(type="button") Preferences…
         div.d-none.d-lg-block
           form.form-inline.flex-nowrap
             input#mySearch.form-control.mx-1(type="search", placeholder="Search")
@@ -65,12 +70,7 @@ block content
             div.card-header.bg-primary Shelly details
             div#details.card-body.p-0.h-100.bg-dark
 
-    #shellyAccessModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shellyAccessModalLabel' aria-hidden='true')
-      .modal-dialog(role='document')
-        .modal-content
-          .modal-body
-            iframe(src='' width='100%' height='100%' frameborder='0' allowtransparency='true')
-
+    //- Define overlay shown when trying to connect to application server
     #connectingModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='connectingModalLabel' aria-hidden='true')
       .modal-dialog.modal-lg.modal-dialog-centered(role='document' style={'max-width': '800px'})
         .modal-content.bg-dark
@@ -79,6 +79,7 @@ block content
           .modal-body
             p Trying to establish a connection with the core application
 
+    //- Define overlay shown when failed to connect to application server
     #offlineModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='offlineModalLabel' aria-hidden='true')
       .modal-dialog.modal-lg.modal-dialog-centered(role='document' style={'max-width': '800px'})
         .modal-content.bg-dark
@@ -90,28 +91,58 @@ block content
             button.close(type='button' data-dismiss='modal' aria-label='Reconnect')
               span(aria-hidden='true') Reconnect…
 
-    #preferencesModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='preferencesModalLabel' aria-hidden='true')
-      .modal-dialog.modal-lg.modal-dialog-centered(role='document' style={'max-width': '700px'})
+    //- Define dialog used to capture credentials specific to a single device
+    #shellyGetCredsModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shellyGetCredsModalLabel' aria-hidden='true')
+      .modal-dialog
+        .modal-content.bg-dark
+          .modal-header
+            h5#shellyGetCredsModalLabel.modal-title Shelly Access Credentials
+          .modal-body
+            form
+              #shellyGetCredsUsrGroup.form-group
+                label.form-label Device account
+                input.form-control(type='text' placeholder='Account name')
+              #shellyGetCredsPwdGroup.form-group
+                label.form-label Password
+                .input-group
+                  input.form-control(type='password' placeholder='Password')
+                  .input-group-append
+                    span.input-group-text
+                      i.fa.fa-eye-slash
+            #shellyGetCredsModalError.alert.alert-danger.invisible
+          .modal-footer
+            button.btn.btn-secondary(type='button' data-dismiss='modal') Cancel
+            button.btn.btn-primary(type='button') Save
+
+    //- Define dialog which proxies access to the individual Shelly admin user interface
+    #shellyAccessModal.modal.fade(tabindex='-1' role='dialog' aria-labelledby='shellyAccessModalLabel' aria-hidden='true')
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-body
+            iframe(src='' width='100%' height='100%' frameborder='0' allowtransparency='true')
+
+    //- Define dialog which capture main preferences for Shelly Admin
+    #preferencesModal.modal.fade(tabindex='-1' role='dialog' aria-hidden='true')
+      .modal-dialog.modal-lg.modal-dialog-centered(style={'max-width': '700px'})
         .modal-content.bg-dark
           .modal-header
             h5#preferencesModalLabel.modal-title Preferences
-            button.close(type='button' data-dismiss='modal' aria-label='Cancel')
-              span(aria-hidden='true') &times;
           .modal-body
             form
               .form-group.row
-                label.col-md-12.col-form-label(for='device-discovery') Shelly Device security:
-                  .form-check.form-group
-                    input#useDeviceSecuirty.form-check-input(type="checkbox", name="", disabled)
-                    label.col-md-12.form-check-label(for='useDeviceSecuirty') Use device account:
-                      .form-group.row
-                        label.col-md-5.col-form-label(for='shellyAccount', disabled) Device account
-                        .col-md-7
-                          input#shellyAccount.form-control(type='text' placeholder='AccountName', disabled)
-                      .form-group.row
-                        label.col-md-5.col-form-label(for='shellyPassword', disabled) Password
-                        .col-md-7
-                          input#shellyPassword.form-control(type='password' placeholder='Password', disabled)
+                label.col-md-12.col-form-label(for='device-discovery') Shelly UI default credentials:
+                  .form-group
+                    #shellyPrefsUsrGroup.form-group.row
+                      label.col-md-5.col-form-label Device account
+                      .col-md-7
+                        input.form-control(type='text' placeholder='AccountName')
+                    #shellyPrefsPwdGroup.form-group.row
+                      label.col-md-5.col-form-label Password
+                      .col-md-7.input-group
+                        input.form-control(type='password' placeholder='Password')
+                        .input-group-append
+                          span.input-group-text
+                            i.fa.fa-eye-slash
               .form-group.row
                 label.col-md-12.col-form-label(for='device-discovery') Shelly Device discovery:
                   .form-check
