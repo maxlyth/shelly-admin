@@ -98,11 +98,12 @@ class Shelly {
       if (err.message === 'Unauthorized') {
         console.error(`Got Unauthorized error trying to connect to ${this.id} so stopping further Status requests`);
         this.#statusPoll.stop();
-        delete this.shellyuser;
-        delete this.shellypassword;
+        //delete this.shellyuser;
+        //delete this.shellypassword;
         this.locked = true;
         this.auth = true;
         this.persist(storage);
+        this.ssesend(sse, 'shellyUpdate');
         return;
       }
       console.error(`*********ERROR*********: ${err.message} failed to retreive coapstatus for ${this.id}`);
@@ -124,11 +125,12 @@ class Shelly {
       if (err.message === 'Unauthorized') {
         console.error(`Got Unauthorized error trying to connect to ${this.id} so stopping further Settings requests`);
         this.#settingsPoll.stop();
-        delete this.shellyuser;
-        delete this.shellypassword;
+        //delete this.shellyuser;
+        //delete this.shellypassword;
         this.locked = true;
         this.auth = true;
         this.persist(storage);
+        this.ssesend(sse, 'shellyUpdate');
         return;
       }
       console.error(`*********ERROR*********: ${err.message} failed to retreive coapsettings for ${this.id}`);
@@ -231,6 +233,22 @@ class Shelly {
     this.ssesend(sse, 'shellyUpdate');
   }
 
+  setAuthCredentials(user, password) {
+    console.info(`Set the credentials of device ${this.deviceKey} to ${user}/${password}`);
+    if ((this.shellyuser !== user) || (this.shellypassword !== password)) {
+      this.shellyuser = user;
+      this.shellypassword = password;
+      this.auth = !_.isEmpty(password);
+      //this.coapDevice.setAuthCredentials(this.shellyuser, this.shellypassword);
+      this.connectPollfn();
+      //this.persist(storage);
+      //this.#statusPoll.start();
+      //this.#settingsPoll.start();
+      //this.ssesend(sse, 'shellyUpdate');
+    }
+  }
+
+
   getSSEobj() {
     let result = _.omitBy(this, (value, key) => {
       if (_.startsWith(key, '_coap')) return true;
@@ -240,22 +258,25 @@ class Shelly {
       result.givenname = 'Unavailable (locked)';
       result.ssid = 'n/a';
     }
+    delete result.lastSeen;
     return result;
   }
 
-  ssesend(sse, eventName) {
-    sse.send(eventName, this.getSSEobj());
+  ssesend(sseSender = sse, eventName = 'shellyUpdate') {
+    sseSender.send(eventName, this.getSSEobj());
   }
 
-  persist(storage) {
-    storage.setItem(this.deviceKey, this);
+  persist(useStore = storage) {
+    try {
+      useStore.setItem(this.deviceKey, this);
+    } catch (err) { console.error(`Object persistance error: ${err.message} in for device ${this.deviceKey}`); }
   }
 
   revive(shelly) {
     for (const [key, value] of Object.entries(shelly)) {
       try {
         if (!_.isUndefined(value)) this[key] = value;
-      } catch (err) { console.error(`Oject revival error: ${err.message} in for key ${key} and value ${value}`); }
+      } catch (err) { console.error(`Object revival error: ${err.message} in for key ${key} and value ${value}`); }
     }
   }
 }
@@ -414,14 +435,12 @@ async function start(app, SSE) {
     });
     console.info(`Loaded ${shellylist.length} Shellies from disk storage`);
 
-    sse.updateInit(shellyListSSE);
     console.info(`Start coIoT Discovery`);
     coIoTserver.listen();
     console.info(`Start CoAP Discovery`);
     shellies.start();
-    //   let debugPoller = new Poller({ pollFn: function () { console.info(`shellyAdminStatus: ${JSON.stringify(shellyAdminStatus)}`) }, options: { delay: 20000 } });
-    const pollinator = require('pollinator');
     let debugPoller = new Pollinator(function () { console.info(`shellyAdminStatus: ${JSON.stringify(shellyAdminStatus)}`) }, { delay: 20000 });
+    sse.updateInit(shellyListSSE);
     debugPoller.start()
 
   } catch (err) { console.error(`Error: ${err.message} shelly-coap start`); }

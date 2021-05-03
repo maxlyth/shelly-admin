@@ -28,7 +28,94 @@ function difference(object, base) {
 function handleShellyDirect(deviceKey) {
   console.info("Display shelly iFrame for " + deviceKey);
   $('#shellyAccessModal iframe').attr('src', "proxy/" + deviceKey + "/");
+  $('#preferencesModal').on('hidden.bs.modal', function (e) {
+    $('#shellyAccessModal iframe').attr('src', "");
+  })
   $('#shellyAccessModal').modal('show');
+}
+
+// eslint-disable-next-line no-unused-vars
+function showShellyCredsDialog(deviceKey) {
+  $('#shellyGetCredsModal').on('hidden.bs.modal', function (e) {
+    // Set password fields to empty on close so as not to later trigger password managers in client browser
+    $('#shellyGetCredsModal input').val('');
+  })
+  $.ajax({ url: "api/getpassword/" + deviceKey })
+    .done(function (data) {
+      console.info("Requested password info for " + deviceKey);
+      $('#shellyGetCredsModalError').addClass('invisible');
+      $('#shellyGetCredsUsrGroup input').val(data.user);
+      $('#shellyGetCredsPwdGroup input').val(data.password);
+      $('#shellyGetCredsPwdGroup input').attr("type", "password");
+      $('#shellyGetCredsPwdGroup i').addClass("fa-eye-slash").removeClass("fa-eye");
+      $("#shellyGetCredsPwdGroup div.input-group-append").click(function () {
+        if ($('#shellyGetCredsPwdGroup input').attr("type") === "text") {
+          $('#shellyGetCredsPwdGroup input').attr("type", "password");
+          $('#shellyGetCredsPwdGroup i').addClass("fa-eye-slash").removeClass("fa-eye");
+        } else if ($('#shellyGetCredsPwdGroup input').attr("type") === "password") {
+          $('#shellyGetCredsPwdGroup input').attr("type", "text");
+          $('#shellyGetCredsPwdGroup i').removeClass("fa-eye-slash").addClass("fa-eye");
+        }
+      });
+      $("#shellyGetCredsModal button.btn-primary").click(function () {
+        const newCreds = {
+          'user': $('#shellyGetCredsUsrGroup input').val(),
+          'password': $('#shellyGetCredsPwdGroup input').val()
+        };
+        $.ajax({ url: "api/setpassword/" + deviceKey, method: "POST", data: newCreds })
+          .done(function (data) {
+            $('#shellyGetCredsModal').modal('hide');
+          })
+          .fail(function (jqXHR, textStatus) {
+            $('#shellyGetCredsModalError').text(`Failed to set password info for ${deviceKey} with status ${textStatus}`);
+            $('#shellyGetCredsModalError').removeClass('invisible');
+          });
+      });
+      $('#shellyGetCredsModal').modal('show');
+
+    })
+    .fail(function (data) {
+      console.error("Failed to get password info for " + deviceKey);
+    })
+}
+
+// eslint-disable-next-line no-unused-vars
+function showPreferencesDialog() {
+  console.info(`Showing preferences dialog`);
+  $.ajax({ url: "api/getpreferences" })
+    .done(function (data) {
+      console.info("Requested Preferences");
+      $('#shellyPrefsUsrGroup input').val(data.user);
+      $('#shellyPrefsPwdGroup input').val(data.password);
+      $('#shellyPrefsPwdGroup input').attr("type", "password");
+      $('#shellyPrefsPwdGroup i').addClass("fa-eye-slash").removeClass("fa-eye");
+      $("#shellyPrefsPwdGroup div.input-group-append").click(function () {
+        if ($('#shellyPrefsPwdGroup input').attr("type") === "text") {
+          $('#shellyPrefsPwdGroup input').attr("type", "password");
+          $('#shellyPrefsPwdGroup i').addClass("fa-eye-slash").removeClass("fa-eye");
+        } else if ($('#shellyPrefsPwdGroup input').attr("type") === "password") {
+          $('#shellyPrefsPwdGroup input').attr("type", "text");
+          $('#shellyPrefsPwdGroup i').removeClass("fa-eye-slash").addClass("fa-eye");
+        }
+      });
+      $("#preferencesModal button.btn-primary").click(function () {
+        const newCreds = {
+          'user': $('#shellyPrefsUsrGroup input').val(),
+          'password': $('#shellyPrefsPwdGroup input').val()
+        };
+        $.ajax({ url: "api/setpreferences", method: "POST", data: newCreds })
+          .done(function (data) {
+            $('#preferencesModal').modal('hide');
+          })
+          .fail(function (jqXHR, textStatus) {
+          });
+      });
+      $('#preferencesModal').modal('show');
+
+    })
+    .fail(function (data) {
+      console.error("Failed to get peferences");
+    })
 }
 
 $(document).ready(function () {
@@ -77,7 +164,7 @@ $(document).ready(function () {
               console.info(`Device need authentication`);
             }
             let locked = _row['locked'] || false;
-            result = '<span' + (auth ? (' style="color:' + (locked ? "red" : "green") + '"') : '') + '>';
+            result = '<span' + (auth ? (' style="color:' + (locked ? 'red"' : 'green"') + ' onclick="showShellyCredsDialog(\'' + _row.deviceKey + '\');"') : '') + '>';
             result += auth ? `<i class="fa fa-lock" aria-hidden="true"></i>` : `<i class="fa fa-unlock-alt" aria-hidden="true"></i>`;
             result += '</span>&nbsp;';
             if (_row.locked === false) {
@@ -135,7 +222,7 @@ $(document).ready(function () {
       },
       {
         "data": "lastSeen",
-        "name": " lastseen",
+        "name": "lastseen",
         "title": "LastSeenCanonical",
         "responsivePriority": 9001,
         "width": 100,
@@ -150,7 +237,11 @@ $(document).ready(function () {
         "width": 20,
         "className": "text-nowrap text-truncate",
         "responsivePriority": 8040,
-        "type": "natural-time-delta"
+        "type": "natural-time-delta",
+        "render": function (data, _type, _row, meta) {
+          if (_type == 'display') return `<span data-toggle="tooltip" title="${_row['lastSeen']}">${data}</span>`;
+          else return data;
+        }
       },
       {
         "data": "mqtt_enable",
@@ -282,7 +373,11 @@ $(document).ready(function () {
   // Set the Bootrap navigation bar search field as the DataTables dynamic filter
   $('#mySearch').keyup(function () {
     shellyTableObj.search($(this).val()).draw();
-  })
+  });
+
+  $("#PreferencesButton").click(function () {
+    showPreferencesDialog();
+  });
 
   // Set a DataTables row selection handler to get a fresh data set from server for selected device and show the result in details card
   shellyTableObj.on('select', function (e, dt, type, indexes) {
