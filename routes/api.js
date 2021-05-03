@@ -25,7 +25,7 @@ api.get('/shellys', function (req, res) {
     res.send(resultlist);
   } catch (err) {
     const response = `Get shellys failed with error ${err.message}...`;
-    console.error(response);
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
@@ -41,7 +41,7 @@ api.get('/shelly/:deviceKey', async function (req, res) {
     res.send(shelly.basicJSON());
   } catch (err) {
     const response = `Get shelly failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
-    console.error(response);
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
@@ -107,7 +107,55 @@ api.get('/details/:deviceKey', function (req, res) {
     res.render('details', { 'title': 'Shelly Details', 'shelly': shellyDetails, 'imageName': imageName });
   } catch (err) {
     const response = `Get details failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
-    console.error(response);
+    console.error('API:' + response);
+    res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
+  }
+});
+
+api.get('/getpreferences', async function (req, res) {
+  try {
+    res.send({ 'user': 'shelly', 'password': '' });
+  } catch (err) {
+    const response = `Getting preferences failed with error ${err.message}...}`;
+    console.error('API:' + response);
+    res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
+  }
+});
+
+api.post('/setpreferences', async function (req, res) {
+  try {
+    res.json({ message: "Preferences updated" });
+  } catch (err) {
+    const response = `Getting preferences failed with error ${err.message}...`;
+    console.error('API:' + response);
+    res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
+  }
+});
+
+api.get('/getpassword/:deviceKey', async function (req, res) {
+  try {
+    const shellylist = req.app.locals.shellylist;
+    const shelly = shellylist[req.params.deviceKey];
+    assert(_.isObject(shelly));
+    res.send({ 'user': shelly.shellyuser, 'password': shelly.shellypassword });
+  } catch (err) {
+    const response = `Getting credentials failed with error ${err.message}... for Shelly matching key:${req.params.deviceKey}`;
+    console.error('API:' + response);
+    res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
+  }
+});
+
+api.post('/setpassword/:deviceKey', async function (req, res) {
+  try {
+    const shellylist = req.app.locals.shellylist;
+    const shelly = shellylist[req.params.deviceKey];
+    assert(_.isObject(shelly));
+    const newCreds = req.body;
+    shelly.setAuthCredentials(newCreds.user, newCreds.password);
+    res.json({ message: "Credentials updated" });
+  } catch (err) {
+    const response = `Getting credentials failed with error ${err.message}... for Shelly matching key:${req.params.deviceKey}`;
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
@@ -121,10 +169,12 @@ api.get('/upgrade/:deviceKey', async function (req, res) {
     res.send("OK");
   } catch (err) {
     const response = `Update failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
-    console.error(response);
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
+
+// http://172.31.8.6/ota?url=http://archive.shelly-tools.de/version/v1.10.2/SHSW-PM.zip
 
 api.get('/update/:deviceKey', async function (req, res) {
   try {
@@ -135,7 +185,7 @@ api.get('/update/:deviceKey', async function (req, res) {
     res.send("OK");
   } catch (err) {
     const response = `Update failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
-    console.error(response);
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
@@ -150,7 +200,7 @@ api.get('/updatestatus/:deviceKey', async function (req, res) {
     res.send(statusResponse.update.status);
   } catch (err) {
     const response = `Status failed with error ${err.message}... Can not find Shelly matching key:${req.params.deviceKey}`;
-    console.error(response);
+    console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
 });
