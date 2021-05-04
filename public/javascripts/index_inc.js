@@ -218,29 +218,29 @@ $(document).ready(function () {
         "responsivePriority": 8100,
         "visible": false
       },
-      {
-        "data": "lastSeen",
-        "name": "lastseen",
-        "title": "LastSeenCanonical",
-        "responsivePriority": 9001,
-        "width": 100,
-        "className": "text-nowrap text-truncate",
-        "visible": false,
-        "render": $.fn.dataTable.render.intlDateTime()
-      },
-      {
-        "data": "lastSeenHuman",
-        "name": "lastseen-human",
-        "title": "LastSeen",
-        "width": 20,
-        "className": "text-nowrap text-truncate",
-        "responsivePriority": 8040,
-        "type": "natural-time-delta",
-        "render": function (data, _type, _row, meta) {
-          if (_type == 'display') return `<span data-toggle="tooltip" title="${_row['lastSeen']}">${data}</span>`;
-          else return data;
-        }
-      },
+      //{
+      //  "data": "lastSeen",
+      //  "name": "lastseen",
+      //  "title": "LastSeenCanonical",
+      //  "responsivePriority": 9001,
+      //  "width": 100,
+      //  "className": "text-nowrap text-truncate",
+      //  "visible": false,
+      //  "render": $.fn.dataTable.render.intlDateTime()
+      //},
+      //{
+      //  "data": "lastSeenHuman",
+      //  "name": "lastseen-human",
+      //  "title": "LastSeen",
+      //  "width": 20,
+      //  "className": "text-nowrap text-truncate",
+      //  "responsivePriority": 8040,
+      //  "type": "natural-time-delta",
+      //  "render": function (data, _type, _row, meta) {
+      //    if (_type == 'display') return `<span data-toggle="tooltip" title="${_row['lastSeen']}">${data}</span>`;
+      //    else return data;
+      //  }
+      //},
       {
         "data": "mqtt_enable",
         "name": "mqtt",
