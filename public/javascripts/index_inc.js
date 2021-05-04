@@ -4,7 +4,7 @@
 /* global _:readonly */
 
 let shellyTableObj = undefined;
-const shellylist = [{}];
+const shellylist = [];
 const detailCardsState = JSON.parse(localStorage.getItem('ShellyAdmin_DetailCardsState_v1')) || { 'detail-general': true };
 const ssesource = new EventSource('events');
 
@@ -132,7 +132,7 @@ $(document).ready(function () {
         "targets": 0,
         "defaultContent": false,
         "orderable": false,
-        "width": "20px",
+        "width": "1.4rem",
         "responsivePriority": 3,
         "className": '',
         "render": function (data, type, row, meta) {
@@ -143,9 +143,9 @@ $(document).ready(function () {
         "data": "deviceKey",
         "name": "deviceKey",
         "title": "key",
-        "width": 0,
-        "responsivePriority": 11001,
-        "visible": false
+        "width": "120px",
+        //"visible": false,
+        "responsivePriority": 1
       },
       {
         "data": "ip",
@@ -162,7 +162,7 @@ $(document).ready(function () {
               console.info(`Device need authentication`);
             }
             let locked = _row['locked'] || false;
-            result = '<span' + (auth ? (' style="color:' + (locked ? 'red"' : 'green"') + ' onclick="showShellyCredsDialog(\'' + _row.deviceKey + '\');"') : '') + '>';
+            result = '<span' + (auth ? (' class="' + (locked ? 'text-danger"' : 'text-success"') + ' onclick="showShellyCredsDialog(\'' + _row.deviceKey + '\');"') : '') + '>';
             result += auth ? `<i class="fa fa-lock" aria-hidden="true"></i>` : `<i class="fa fa-unlock-alt" aria-hidden="true"></i>`;
             result += '</span>&nbsp;';
             if (_row.locked === false) {
@@ -276,11 +276,14 @@ $(document).ready(function () {
                 return result;
               }
             }
-            if (data.hasupdate || false) {
+            const deviceKey = _row['deviceKey'];
+            if (data.hasupgrade || false) {
               data.newlong ??= '';
-              const deviceKey = _row['deviceKey'];
               result = `<span onclick="handleShellyUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Start firmware upgrade" data-content="${data.newlong}">${data.curshort}&nbsp;&nbsp;`;
-              result += `<i class="fas fa-sync-alt" style="color:red"></i></span>`;
+              result += `<i class="text-info fas fa-level-up-alt"></i></span>`;
+            } else {
+              result = `<span onclick="handleShellyCheckUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Check for firmware upgrade">${data.curshort}&nbsp;`;
+              result += `<i class="text-muted fas fa-sync-alt"></i></span>`;
             }
           }
           return result;
@@ -377,6 +380,10 @@ $(document).ready(function () {
     showPreferencesDialog();
   });
 
+  shellyTableObj.on('column-sizing', function () {
+    $('#shellylist thead tr th:first').css('width', '1.4rem');
+  });
+
   // Set a DataTables row selection handler to get a fresh data set from server for selected device and show the result in details card
   shellyTableObj.on('select', function (e, dt, type, indexes) {
     if (type === 'row') {
@@ -434,6 +441,7 @@ $(document).ready(function () {
     for (const [, shelly] of Object.entries(shellys)) {
       shellyTableObj.row.add(shelly);
     }
+    shellyTableObj.one('draw', function () { $('#connectingOverlay').delay(250).fadeOut(400, function () { $('#connectingOverlay').addClass('invisible') }); });
     shellyTableObj.columns.adjust().draw();
   }, false);
   ssesource.addEventListener('shellyUpdate', message => {
@@ -500,11 +508,11 @@ function pollUpgradeTimer() {
   var originalContent = this.originalContent;
   var startTime = this.startTime;
   var curStatus = this.curStatus;
-  $.ajax({ url: "api/updatestatus/" + deviceKey })
+  $.ajax({ url: "api/upgradestatus/" + deviceKey })
     .done(function (data) {
-      console.info(`Got update status of ${data} for ${deviceKey}`);
+      console.info(`Got upgrade status of ${data} for ${deviceKey}`);
       if (data == 'idle') {
-        tableCell.html(`<span upgraded><i class="fas fa-check-circle" style="color:green"></i>&nbsp;Success!</span>`);
+        tableCell.html(`<span upgraded><i class="text-success fas fa-check-circle"></i>&nbsp;Success!</span>`);
         setTimeout(function () {
           $('[upgraded]', tableCell).removeAttr('upgraded');
           $.ajax({
@@ -521,12 +529,12 @@ function pollUpgradeTimer() {
       }
       if (data != curStatus) {
         curStatus = data;
-        tableCell.html(`<span upgrading><i class="fas fa-spinner fa-spin" style="color:green"></i>&nbsp;${data}</span>`);
+        tableCell.html(`<span upgrading><i class="text-success fas fa-spinner fa-spin"></i>&nbsp;${data}</span>`);
       }
       setTimeout(pollUpgradeTimer.bind({ element, deviceKey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
-      console.warning(`Updatestatus failed with ${data} for ${deviceKey}`);
+      console.warning(`upgradestatus failed with ${data} for ${deviceKey}`);
       if ((Date.now() - startTime) > 60000) {
         tableCell.html(originalContent);
       } else {
@@ -544,7 +552,7 @@ function handleShellyUpgrade(element, deviceKey) {
   let curStatus = 'Requesting…';
   $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
   tableCell.html(`<span upgrading>${curStatus}</span>`);
-  $.ajax({ url: "api/update/" + deviceKey })
+  $.ajax({ url: "api/upgrade/" + deviceKey })
     .done(function (data) {
       console.info("Requested firmware upgrade for " + deviceKey);
       setTimeout(pollUpgradeTimer.bind({ element, deviceKey, tableCell, originalContent, startTime, curStatus }), 1500);
@@ -552,5 +560,28 @@ function handleShellyUpgrade(element, deviceKey) {
     .fail(function (data) {
       tableCell.html(originalContent);
       console.error("Failed to request firmware upgrade for " + deviceKey);
+    });
+}
+
+// eslint-disable-next-line no-unused-vars
+function handleShellyCheckUpgrade(element, deviceKey) {
+  console.info("Start firmware check for " + deviceKey);
+  let tableCell = $(element).parent();
+  let originalContent = tableCell.html();
+  $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
+  $('i', tableCell).removeClass(['fa-sync-alt', 'text-muted']).addClass(['fa-spinner', 'fa-spin'])
+  $.ajax({ url: "api/checkforupgrade/" + deviceKey })
+    .done(function () {
+      console.info("Got successful firmware check for " + deviceKey);
+      $.ajax({
+        url: "api/shelly/" + deviceKey
+      }).done(function (data) {
+        console.info("Got updated data after successful firmware check for " + deviceKey);
+        shellyTableObj.row(tableCell).data(data).draw();
+      })
+    })
+    .fail(function () {
+      tableCell.html(originalContent);
+      console.error("Failed to request firmware check for " + deviceKey);
     });
 }

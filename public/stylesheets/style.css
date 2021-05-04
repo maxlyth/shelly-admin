@@ -96,9 +96,9 @@ body {
   transform: rotate(90deg);
 }
 
-#overlay {
-  background: #ffffff;
-  color: #666666;
+.overlay {
+  backdrop-filter: blur(6px);
+  background: #000000a0;
   position: fixed;
   height: 100vh;
   width: 100vw;
@@ -107,23 +107,30 @@ body {
   left: 0;
   float: left;
   text-align: center;
-  padding-top: 25%;
-  opacity: 0.8;
+  padding-top: 20%;
 }
-.spinner {
-  margin: 0 auto;
-  height: 64px;
-  width: 64px;
-  animation: rotate 0.8s infinite linear;
-  border: 5px solid firebrick;
-  border-right-color: transparent;
-  border-radius: 50%;
+
+#shellylist
+  table.dataTable.dtr-inline.collapsed.table-sm
+  tbody
+  tr
+  td:first-child:before,
+#shellylist
+  table.dataTable.dtr-inline.collapsed.table-sm
+  tbody
+  tr
+  th:first-child:before {
+  top: 1rem;
 }
-@keyframes rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+
+#shellylist table.dataTable tbody > tr.selected,
+#shellylist table.dataTable tbody > tr > .selected {
+  background-color: #0275d8;
+}
+#shellylist table.dataTable.table-hover tbody > tr:hover.selected,
+#shellylist table.dataTable.table-hover tbody > tr:hover > .selected {
+  background-color: #2283d8;
+}
+#shellylist table.dataTable.table-hover tbody > tr:hover {
+  background-color: #4e97d860;
 }

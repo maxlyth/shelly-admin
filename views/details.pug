@@ -14,7 +14,7 @@ block content
             #detail-general.collapse.show(aria-labelledby='heading-detail-general')
               .card-body.px-0.pt-2.pb-1
                 div.row.mx-0.shellydetail.small
-                  each value, key in { '_coapsettings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', 'shelly.mac': 'MAC address:', '_coapsettings.wifirecovery_reboot_enabled': 'No WiFi reboot:', '_coapsettings.factory_reset_from_switch': 'Reset from switch:', '_coapsettings.debug_enable': 'Debug enabled:'}
+                  each value, key in { '_coapsettings.name': 'Device name:', 'id': 'Shelly ID:', 'type': 'Shelly Type:', 'modelName': 'Shelly Model:', '_coapsettings.device.mac': 'MAC address:', '_coapsettings.wifirecovery_reboot_enabled': 'No WiFi reboot:', '_coapsettings.factory_reset_from_switch': 'Reset from switch:', '_coapsettings.debug_enable': 'Debug enabled:'}
                     dt.col-5= value
                     dd.col-7!= getShellyDetail(shelly, key)
 
@@ -26,7 +26,7 @@ block content
             #detail-network.collapse.show(aria-labelledby='heading-detail-network')
               .card-body.px-0.pt-2.pb-1
                 div.row.mx-0.shellydetail.small
-                  each value, key in { '_coapstatus.wifi_sta.ip': 'IP address:', '_coapsettings.device.hostname': 'Hostname:', '_coapsettings.discoverableip': 'Is discoverable?:'}
+                  each value, key in { '_coapstatus.wifi_sta.ip': 'IP address:', '_coapsettings.device.hostname': 'Hostname:', '_coapsettings.discoverable': 'Is discoverable?:'}
                     dt.col-5= value
                     dd.col-7!= getShellyDetail(shelly, key)
 
@@ -38,7 +38,7 @@ block content
             #detail-firmware.collapse.show(aria-labelledby='heading-detail-firmware')
               .card-body.px-0.pt-2.pb-1
                 div.row.mx-0.shellydetail.small
-                  each value, key in { '_coapsettings.fw': 'Current Firmware:', '_coapsettings.build_info.build_timestamp': 'Build time:', '_coapsettings.build_info.build_version': 'Build version:', '_coapstatus.update.has_update': 'Update available:', '_coapstatus.update.new_version': 'Version available:', '_coapstatus.update._coapstatus': 'Update status:'}
+                  each value, key in { '_coapsettings.fw': 'Current Firmware:', '_coapsettings.build_info.build_timestamp': 'Build time:', '_coapsettings.build_info.build_version': 'Build version:', '_coapstatus.update.has_update': 'Update available:', '_coapstatus.update.new_version': 'Version available:', '_coapstatus.update.status': 'Update status:'}
                     dt.col-5= value
                     dd.col-7!= getShellyDetail(shelly, key)
 

@@ -7,12 +7,14 @@
 /* eslint-disable lodash/prefer-lodash-method */
 
 const _ = require('lodash');
-const shellies = require('shellies')
 const { CoIoTServer, } = require('coiot-coap');
-const storage = require('node-persist');
+const localdb = require('node-persist');
+const when = require('when');
 const assert = require('assert');
 const network = require('net');
 const Pollinator = require('pollinator');
+const got = require("got");
+let PQueue; (async () => { PQueue = (await import('p-queue')).default; })();
 
 const makeDeviceKey = (type, id) => `${type}-${id}`;
 let sse;
@@ -20,12 +22,33 @@ let sse;
 const coIoTserver = new CoIoTServer();
 let shellyAdminStatus = {
   coiotDiscovered: 0,
-  coapDiscovered: 0,
   readFromDisk: 0,
   connectCalls: 0,
   statusCalls: 0,
   settingsCalls: 0
 }
+
+class QueuedStorage {
+  constructor() {
+    this.storage = localdb.create({ ttl: true, logging: false })
+  }
+  async init() {
+    await this.storage.init();
+  }
+  async getItem(key) {
+    this.current = when(this.current,
+      () => { return this.storage.getItem(key) },
+      () => { return this.storage.getItem(key) });
+    return this.current;
+  }
+  async setItem(key, value) {
+    this.current = when(this.current,
+      () => { return this.storage.setItem(key, value) },
+      () => { return this.storage.setItem(key, value) });
+    return this.current;
+  }
+}
+const storage = new QueuedStorage();
 
 /**
  * Deep diff between two object, using lodash
@@ -43,14 +66,15 @@ function difference(object, base) {
   });
 }
 const TimeAgo = require('javascript-time-ago');
+const { isObject } = require('lodash');
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/en'));
 const timeAgo = new TimeAgo('en-GB')
 class Shelly {
-  #coapDevice
-  #coapshelly
   #connectPoll
   #statusPoll
   #settingsPoll
+
+  #coapshelly
   _coapsettings
   _coapstatus
 
@@ -61,133 +85,139 @@ class Shelly {
     this.ip = host;
     if (!network.isIP(this.ip)) debugger;
     this.lastSeen = new Date();
-    this.firmware = { curlong: '', curshort: '', status: 'idle', hasupdate: false, newlong: '', newshort: '' };
+    this.firmware = { curlong: '', curshort: '', status: 'idle', hasupgrade: false, newlong: '', newshort: '' };
+    this.online = false;
+    this.connected = false;
     this.persist(storage);
     this.ssesend(sse, 'shellyCreate');
+    this.deviceAPIqueue = new PQueue({ concurrency: 1 });
   }
 
-  connectPollfn() {
-    //console.log(`connectPoll ${this.deviceKey}`);
+  async connectPollfn() {
     shellyAdminStatus.connectCalls++;
-    this.#coapDevice.request.get(`http://${this.ip}/shelly`).then(res => {
-      this.online = true;
-      const coapshelly = res.body;
-      const differences = difference(this.coapshelly, coapshelly);
+    if ((this.deviceKey === 'SHSW-PM-A4CF12F3F2D3') || (this.deviceKey === 'SHSW-PM-F30AA2') || (this.deviceKey === 'SHSW-1-E098068D0745'))
+      console.log(`connectPoll ${this.deviceKey}`);
+    try {
+      const newShellyRec = await this.callShelly('shelly');
+      const differences = difference(this.coapshelly, newShellyRec);
       if (!_.isEmpty(differences)) {
-        this.coapshelly = coapshelly;
+        this.coapshelly = newShellyRec;
       } else {
-        //console.info(`No point to update coapshelly`);
+        console.info(`No point to update coapshelly`);
       }
-    }, err => {
+    } catch (err) {
+      if (err.message === 'Aborted') {
+        console.warn(`connectPollfn error: Timeout trying to connect to device ${this.deviceKey}`);
+        return;
+      }
       console.error(`*********ERROR*********: ${err.message} failed to retreive coapshelly REST call for ${this.id}`);
-    })
+    }
   }
-  statusPollfn() {
+  async statusPollfn() {
     shellyAdminStatus.statusCalls++;
-    //console.log(`statusPoll ${this.deviceKey}`);
-    this.coapDevice.getStatus().then(res => {
-      this.locked = false;
-      const coapstatus = res;
-      const differences = difference(this.coapstatus, coapstatus);
+    if (this.deviceKey === 'SHSW-PM-A4CF12F3F2D3')
+      console.log(`statusPoll ${this.deviceKey}`);
+    try {
+      const newStatus = await this.callShelly('status');
+      this.connected = true;
+      const differences = difference(this.coapstatus, newStatus);
       if (!_.isEmpty(differences)) {
-        this.coapstatus = coapstatus;
+        this.coapstatus = newStatus;
       } else {
-        console.error(`Got coapstatus for ${this.deviceKey} but ignored as they are the same`);
+        console.info(`Got coapstatus for ${this.deviceKey} but ignored as they are the same`);
       }
-    }, err => {
+    } catch (err) {
       if (err.message === 'Unauthorized') {
-        console.error(`Got Unauthorized error trying to connect to ${this.id} so stopping further Status requests`);
+        console.warn(`statusPollfn error: Got Unauthorized trying to connect to ${this.id} so stopping further Status requests`);
         this.#statusPoll.stop();
-        //delete this.shellyuser;
-        //delete this.shellypassword;
+        this.connected = false;
         this.locked = true;
         this.auth = true;
         this.persist(storage);
         this.ssesend(sse, 'shellyUpdate');
+        return;
+      }
+      if (err.message === 'Aborted') {
+        console.warn(`statusPollfn error: Timeout trying to connect to device ${this.deviceKey}`);
         return;
       }
       console.error(`*********ERROR*********: ${err.message} failed to retreive coapstatus for ${this.id}`);
-    });
+    }
+    return this.coapstatus;
   }
-  settingsPollfn() {
+  async settingsPollfn() {
     shellyAdminStatus.settingsCalls++;
-    //console.log(`settingsPoll ${this.deviceKey}`);
-    this.coapDevice.getSettings().then(res => {
-      this.locked = false;
-      const coapsettings = res;
-      const differences = difference(this.coapsettings, coapsettings);
-      if (_.isEmpty(this.coapsettings) || !_.isEmpty(differences)) {
-        this.coapsettings = coapsettings;
-      } else {
-        //console.error(`Got coapsettings for ${this.deviceKey} but ignored as they are the same`);
+    if (this.deviceKey === 'SHSW-PM-A4CF12F3F2D3')
+      console.log(`settingsPoll ${this.deviceKey}`);
+    try {
+      const newSettings = await this.callShelly('settings');
+      this.connected = true;
+      // We are not interested in the time data in settings so soft update them so we do not see as a difference
+      if (_.isObject(this._coapsettings)) {
+        this._coapsettings.time = newSettings.time;
+        this._coapsettings.unixtime = newSettings.unixtime;
       }
-    }, err => {
+      const differences = difference(this.coapsettings, newSettings);
+      if (!_.isEmpty(differences)) {
+        this.coapsettings = newSettings;
+      }
+    } catch (err) {
       if (err.message === 'Unauthorized') {
-        console.error(`Got Unauthorized error trying to connect to ${this.id} so stopping further Settings requests`);
+        console.error(`settingsPollfn error: Got Unauthorized trying to connect to ${this.id} so stopping further Status requests`);
         this.#settingsPoll.stop();
-        //delete this.shellyuser;
-        //delete this.shellypassword;
+        this.connected = false;
         this.locked = true;
         this.auth = true;
         this.persist(storage);
         this.ssesend(sse, 'shellyUpdate');
         return;
       }
+      if (err.message === 'Aborted') {
+        console.warn(`settingsPollfn error: Timeout trying to connect to device ${this.deviceKey}`);
+        return;
+      }
       console.error(`*********ERROR*********: ${err.message} failed to retreive coapsettings for ${this.id}`);
-    });
+    }
   }
 
-  get coapDevice() {
-    return this.#coapDevice;
-  }
-  set coapDevice(coapDevice) {
-    if (this.#coapDevice === coapDevice) {
-      console.error(`Tried to assgn coapDevice for ${this.deviceKey} that already exists`);
-      return;
-    }
-    this.ip = coapDevice.host;
-    if (!network.isIP(this.ip)) debugger;
-    this.online = false;
-    this.auth = false;
-    this.locked = true;
-    if (_.isDate(coapDevice.lastSeen)) this.lastSeen = coapDevice.lastSeen;
-    if (_.isDate(this.lastSeen)) this.lastSeenHuman = timeAgo.format(this.lastSeen);
-    if (!_.isEmpty(coapDevice.modelName)) this.modelName = coapDevice.modelName;
-    this.#connectPoll = new Pollinator(this.connectPollfn.bind(this), { delay: 120000 });
-    this.#statusPoll = new Pollinator(this.statusPollfn.bind(this), { delay: 30000 });
-    this.#settingsPoll = new Pollinator(this.settingsPollfn.bind(this), { delay: 30000 });
-    this.#coapDevice = coapDevice;
-    this.#connectPoll.start();
-    this.persist(storage);
-    this.ssesend(sse, 'shellyUpdate');
-  }
   get coapshelly() {
     return this.#coapshelly;
   }
   set coapshelly(coapshelly) {
     assert(_.isObject(coapshelly));
-    assert(_.isObject(this.#coapDevice));
     if (this.#coapshelly === coapshelly) {
       console.error(`Tried to assign coapshelly for ${this.deviceKey} that already exists`);
       return;
     }
     this.#coapshelly = coapshelly;
+    if (!_.isEmpty(coapshelly.type)) this.modelName = coapshelly.type;
     this.firmware.curlong = coapshelly.fw;
     this.firmware.curshort = (/([^/]*\/)([^-]*)(-.*)/g.exec(coapshelly.fw + "/-"))[2];
     this.online = coapshelly.online;
     this.auth = coapshelly.auth;
-    if ((this.auth === true) && (this.locked === true)) {
-      if (_.isEmpty(this.shellyuser)) {
-        console.warn(`There is no device (${this.deviceKey}) specific username found so using global user '${process.env.SHELLYUSER}/${process.env.SHELLYPW.slice(0, 2)}***'`);
-        this.shellyuser = process.env.SHELLYUSER;
-        this.shellypassword = process.env.SHELLYPW;
-      } else {
-        console.warn(`Found device specific username '${this.shellyuser}/${this.shellypassword.slice(0, 2)}***' so using that for device '${this.deviceKey}'`);
+    if (this.connected === false) {
+      if (this.auth === true) {
+        if (_.isEmpty(this.shellyuser)) {
+          console.warn(`set coapshelly: There is no device (${this.deviceKey}) specific username found so using global user '${process.env.SHELLYUSER}/${process.env.SHELLYPW.slice(0, 2)}***'`);
+          this.shellyuser = process.env.SHELLYUSER;
+          this.shellypassword = process.env.SHELLYPW;
+        } else {
+          console.warn(`set coapshelly: Found device specific username '${this.shellyuser}/${this.shellypassword.slice(0, 2)}***' so using that for device '${this.deviceKey}'`);
+        }
       }
-      this.coapDevice.setAuthCredentials(this.shellyuser, this.shellypassword);
+      this.callShelly('status')
+        .then(function () {
+          this.connected = true;
+          this.locked = false;
+          this.#statusPoll.start();
+          this.#settingsPoll.start();
+          this.persist(storage);
+          this.ssesend(sse, 'shellyUpdate');
+        }.bind(this))
+        .catch(function () {
+          console.warn(`set coapshelly: Auth error while trying to connect to ${this.deviceKey}`);
+        }.bind(this))
     }
-    this.#statusPoll.start();
-    this.#settingsPoll.start();
     this.persist(storage);
     this.ssesend(sse, 'shellyUpdate');
   }
@@ -202,7 +232,7 @@ class Shelly {
     if (_.isBoolean(coapstatus?.mqtt?.connected))
       this.mqtt_connected = coapstatus.mqtt.connected;
     if (_.isBoolean(coapstatus?.update?.has_update))
-      this.firmware.hasupdate = coapstatus?.update.has_update;
+      this.firmware.hasupgrade = coapstatus?.update.has_update;
     if (!_.isEmpty(coapstatus.update?.new_version)) {
       this.firmware.newlong = coapstatus.update.new_version;
       this.firmware.newshort = (/([^/]*\/)([^-]*)(-.*)/g.exec(this.firmware.newlong + "/-"))[2];
@@ -229,8 +259,59 @@ class Shelly {
       this.firmware.curlong = coapsettings.fw;
       this.firmware.curshort = (/([^/]*\/)([^-]*)(-.*)/g.exec(this.firmware.curlong + "/-"))[2];
     }
+    if (!_.isEmpty(coapsettings.device?.type)) this.modelName = coapsettings.device.type;
     this.persist(storage);
     this.ssesend(sse, 'shellyUpdate');
+  }
+
+  start() {
+    if (!network.isIP(this.ip)) debugger;
+    this.online = false;
+    this.auth = false;
+    this.locked = true;
+    if (!_.isObject(this.#connectPoll)) {
+      this.#connectPoll = new Pollinator(this.connectPollfn.bind(this), { delay: 20000 + ~~(Math.random * 759) });
+    } else {
+      this.#connectPoll.stop();
+    }
+    if (!_.isObject(this.#statusPoll)) {
+      this.#statusPoll = new Pollinator(this.statusPollfn.bind(this), { delay: 30020 + ~~(Math.random * 1079) });
+    } else {
+      this.#statusPoll.stop();
+    }
+    if (!_.isObject(this.#settingsPoll)) {
+      this.#settingsPoll = new Pollinator(this.settingsPollfn.bind(this), { delay: 50080 + ~~(Math.random * 2019) });
+    } else {
+      this.#settingsPoll.stop();
+    }
+    this.#connectPoll.start();
+    this.persist(storage);
+    this.ssesend(sse, 'shellyUpdate');
+    return this;
+  }
+  stop() {
+    this.online = false;
+    this.#connectPoll.stop();
+    this.#statusPoll.stop();
+    this.#settingsPoll.stop();
+    return this;
+  }
+
+  async callShelly(urlPath) {
+    let requestOptions = { responseType: 'json', options: { responseType: 'json' } };
+    if (this.auth) {
+      requestOptions.options.username = this.shellyuser;
+      requestOptions.options.password = this.shellypassword;
+      requestOptions.options.auth = this.shellyuser + ':' + this.shellypassword;
+      requestOptions.username = this.shellyuser;
+      requestOptions.password = this.shellypassword;
+      requestOptions.auth = this.shellyuser + ':' + this.shellypassword;
+    }
+    const { body } = await this.deviceAPIqueue.add(() => got(`http://${this.ip}/${urlPath}`, requestOptions));
+    const result = JSON.parse(body);
+    if (this.auth === true)
+      console.info(`Got result of auth device ${this.deviceKey} to path '${urlPath}'`)
+    return result;
   }
 
   setAuthCredentials(user, password) {
@@ -239,15 +320,9 @@ class Shelly {
       this.shellyuser = user;
       this.shellypassword = password;
       this.auth = !_.isEmpty(password);
-      //this.coapDevice.setAuthCredentials(this.shellyuser, this.shellypassword);
-      this.connectPollfn();
-      //this.persist(storage);
-      //this.#statusPoll.start();
-      //this.#settingsPoll.start();
-      //this.ssesend(sse, 'shellyUpdate');
+      this.stop().start();
     }
   }
-
 
   getSSEobj() {
     let result = _.omitBy(this, (value, key) => {
@@ -266,9 +341,9 @@ class Shelly {
     sseSender.send(eventName, this.getSSEobj());
   }
 
-  persist(useStore = storage) {
+  async persist(useStore = storage) {
     try {
-      useStore.setItem(this.deviceKey, this);
+      await useStore.setItem(this.deviceKey, this)
     } catch (err) { console.error(`Object persistance error: ${err.message} in for device ${this.deviceKey}`); }
   }
 
@@ -348,9 +423,7 @@ coIoTserver.on('status', (status) => {
     if (!network.isIP(status.host)) status.host = status.location?.host;
     if (!network.isIP(status.host)) debugger;
     shelly = new Shelly(status.deviceType, status.deviceId, status.host);
-    shelly.online = true;
-    shelly.locked = true;
-    shelly.coapDevice = shellies.createDevice(status.deviceType, status.deviceId, status.host);
+    shelly.start();
     shellylist[deviceKey] = shelly;
     shellyAdminStatus.coiotDiscovered++;
     shelly.persist(storage);
@@ -358,62 +431,9 @@ coIoTserver.on('status', (status) => {
   } catch (err) { console.error(`Error: ${err.message} in coIoTserver.on`); }
 });
 
-
-shellies.on('stale', device => {
-  console.info(`Got global stale event with ID ${device.id} and type ${device.type}`);
-})
-shellies.on('offline', device => {
-  console.info(`Got global offline event with ID ${device.id} and type ${device.type}`);
-})
-shellies.on('online', device => {
-  console.info(`Got global online event with ID ${device.id} and type ${device.type}`);
-})
-//shellies.on('add', device => {
-// This event is emitted after a call to addDevice()
-//  console.info(`Got global add event with ID ${device.id} and type ${device.type}`);
-//})
-shellies.on('remove', device => {
-  console.info(`Got global remove event with ID ${device.id} and type ${device.type}`);
-  try {
-    const deviceKey = makeDeviceKey(device.type, device.id);
-    let shelly = shellylist[deviceKey];
-    console.log(`Device with deviceKey ${deviceKey} went offline`)
-    storage.removeItem(deviceKey);
-    shelly.ssesend(sse, 'shellyRemove');
-    delete shellylist[deviceKey];
-  } catch (err) { console.error(`Error: ${err.message} while handling offline event`); }
-})
-
-shellies.on('discover', device => {
-  // a new device has been discovered
-  const deviceKey = makeDeviceKey(device.type, device.id);
-  let shelly = shellylist[deviceKey];
-  try {
-    if (_.isObject(shelly)) {
-      //console.info(`Discovered existing device via CoaP with ID ${device.id} and type ${device.type}`);
-    } else {
-      console.log(`Discovered new device via CoaP with ID ${device.id} and type ${device.type}`);
-      if (!network.isIP(device.host)) debugger;
-      shelly = new Shelly(device.type, device.id, device.host);
-      shelly.coapDevice = device;
-      shellylist[deviceKey] = shelly;
-      shellyAdminStatus.coapDiscovered++;
-      shelly.persist(storage);
-      shelly.ssesend(sse, 'shellyCreate');
-    }
-  } catch (err) { console.error(`Error: ${err.message} while processing discovered Shelly`); }
-  device.on('online', () => {
-    console.info(`Got device online event`);
-  })
-  device.on('offline', () => {
-    console.info(`Got device offline event`);
-  })
-})
-
 async function start(app, SSE) {
   sse = SSE;
   try {
-    await storage.init();
     let importlist = [];
     try {
       importlist = await storage.values();
@@ -422,13 +442,10 @@ async function start(app, SSE) {
       try {
         if (!network.isIP(importShelly.ip)) debugger;
         let newShelly = new Shelly(importShelly.type, importShelly.id, importShelly.ip);
-        newShelly.online = false;
-        newShelly.locked = true;
-        newShelly.coapDevice = shellies.createDevice(importShelly.type, importShelly.id, importShelly.ip);
         newShelly.revive(importShelly);
         newShelly.online = false;
-        newShelly.locked = true;
         shellylist[newShelly.deviceKey] = newShelly;
+        newShelly.start();
         shellyAdminStatus.readFromDisk++;
         newShelly.ssesend(sse, 'shellyCreate');
       } catch (err) { console.error(`Error: ${err.message} while handling load persisted shelly`); }
@@ -437,8 +454,6 @@ async function start(app, SSE) {
 
     console.info(`Start coIoT Discovery`);
     coIoTserver.listen();
-    console.info(`Start CoAP Discovery`);
-    shellies.start();
     let debugPoller = new Pollinator(function () { console.info(`shellyAdminStatus: ${JSON.stringify(shellyAdminStatus)}`) }, { delay: 20000 });
     sse.updateInit(shellyListSSE);
     debugPoller.start()
