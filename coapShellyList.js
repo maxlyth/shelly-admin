@@ -1,11 +1,7 @@
 const _ = require('lodash');
-const network = require('net');
 const { CoIoTServer, } = require('coiot-coap');
 const Shelly = require('./coapShellyDevice.js');
 const NodePersist = require('node-persist');
-
-
-const makeDeviceKey = (type, id) => `${type}-${id}`;
 
 
 const findShellyPropIndex = function (target, prop) {
@@ -99,7 +95,6 @@ class ShellyFinder {
     const prefs = await this.prefs;
     const deviceAuth = await this.appStorage.getItem('deviceAuth');
 
-    //sseQueue = new (await import('p-queue')).default({ concurrency: 1 });
     await this.storage.init({ forgiveParseErrors: true });
     try {
       let importlist = [];
@@ -110,7 +105,6 @@ class ShellyFinder {
       }
       await Promise.all(importlist.map(async (importShelly) => {
         try {
-          if (!network.isIP(importShelly.ip)) debugger;
           let newShelly = await new Shelly(importShelly.type, importShelly.id, importShelly.ip, this.sse, this.storage).initialized;
           newShelly.revive(importShelly);
           newShelly.online = false;
@@ -122,17 +116,18 @@ class ShellyFinder {
       }));
       console.info(`Loaded ${this.shellylist.length} Shellies from disk storage`);
       this.sse.updateInit(this.shellyListSSE);
-      //await sseQueue.add(() => sse.send('shellysLoad', shellyListSSE));
       this.sse.send('shellysLoad', this.shellyListSSE);
 
       console.info(`Start coIoT Discovery`);
       this.coIoTserver.on('status', async (status) => {
         try {
-          const deviceKey = makeDeviceKey(status.deviceType, status.deviceId);
+          const deviceKey = `${status.deviceType}-${status.deviceId}`;
+          if (_.isObject(this.shellylist[deviceKey])) {
+            //console.error(`coIoTserver.on: Ignore device. It already exists!`)
+            return;
+          }
           console.info(`CoIoT Discovered new device with ID ${status.deviceId} and type  ${status.deviceType}`);
-          if (!network.isIP(status.host)) status.host = status.location?.host;
-          if (!network.isIP(status.host)) debugger;
-          shelly = await new Shelly(status.deviceType, status.deviceId, status.host, this.sse, this.storage).initialized;
+          const shelly = await new Shelly(status.deviceType, status.deviceId, status.location.host, this.sse, this.storage).initialized;
           shelly.start();
           this.shellylist[deviceKey] = shelly;
           shelly.persist();

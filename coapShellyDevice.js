@@ -26,6 +26,7 @@ const TimeAgo = require('javascript-time-ago');
 const { isObject } = require('lodash');
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/en'));
 const timeAgo = new TimeAgo('en-GB')
+
 class Shelly {
   #coapshelly = {};
   _coapsettings = {};
@@ -71,7 +72,7 @@ class Shelly {
         return this;
       })
     ]).then(result => {
-      return result[0]; // this is what makes the one-liner possible
+      return result[0]; // Both promises return same value so take first.
     })
   }
 
@@ -329,7 +330,7 @@ class Shelly {
     const shellySSE = this.getSSEobj();
     const differences = difference(shellySSE, this.#lastSentSSE);
     if ((!_.isEmpty(differences)) || (eventName != this.#lastSSEEventType)) {
-      console.info(`ssesend: sending ${eventName} for device ${this.deviceKey} ${this.#lastSSEEventType}:${JSON.stringify(differences)}`)
+      //console.info(`ssesend: sending ${eventName} for device ${this.deviceKey} ${this.#lastSSEEventType}:${JSON.stringify(differences)}`)
       this.#sse.send(shellySSE, eventName);
       this.#lastSSEEventType = eventName;
       this.#lastSentSSE = shellySSE;

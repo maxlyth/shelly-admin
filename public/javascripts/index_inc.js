@@ -441,9 +441,10 @@ $(document).ready(function () {
       const existingObj = existingRow.data();
       const differences = difference(existingObj, shelly);
       if (differences.length === 0) {
-        console.log(`SSE: shellyUpdate no changes for ${devKey}`);
+        $.noop()//
+        //console.log(`SSE: shellyUpdate no changes for ${devKey}`);
       } else {
-        console.log(`SSE: shellyUpdate data differs for ${devKey}`);
+        //console.log(`SSE: shellyUpdate data differs for ${devKey}`);
         existingRow.data(shelly);
         let noVisibleCols = false;
         //let noVisibleCols = true;
