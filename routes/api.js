@@ -5,7 +5,7 @@ const express = require('express');
 const fs = require("fs");
 const path = require('path');
 const prettyBytes = require('pretty-bytes');
-const humanizeDuration = require("humanize-duration");
+//const humanizeDuration = require("humanize-duration");
 const encode = require("html-entities").encode;
 const assert = require('assert');
 
@@ -14,14 +14,16 @@ const api = express.Router();
 //READ Request Handlers
 api.get('/shellys', function (req, res) {
   try {
-    const shellylist = req.app.locals.shellylist;
-    let resultlist = () => {
-      let result = [];
-      for (const shelly in shellylist) {
-        result.push(shelly.sseobj);
-      }
-      return result;
-    }
+    const shellyFinder = req.app.locals.shellyFinder;
+    const resultlist = shellyFinder.shellyListSSE;
+    //const shellylist = req.app.locals.shellylist;
+    //let resultlist = () => {
+    //  let result = [];
+    //  for (const shelly in shellylist) {
+    //    result.push(shelly.sseobj);
+    //  }
+    //  return result;
+    //}
     res.send(resultlist);
   } catch (err) {
     const response = `Get shellys failed with error ${err.message}...`;
@@ -61,10 +63,10 @@ api.get('/details/:deviceKey', async function (req, res) {
       case '_coapsettings.mqtt.reconnect_timeout_min':
       case '_coapsettings.mqtt.reconnect_timeout_max':
       case '_coapstatus.uptime':
-        result = humanizeDuration(result * 1000, { largest: 2 });
+        result = '';//humanizeDuration(result * 1000, { largest: 2 });
         break;
       case 'lastSeen':
-        result = humanizeDuration((Date.now() - result), { maxDecimalPoints: 1, largest: 2 });
+        result = '';//humanizeDuration((Date.now() - result), { maxDecimalPoints: 1, largest: 2 });
         break;
       case '_coapsettings.device.mac':
       case 'shelly.mac':
@@ -114,7 +116,9 @@ api.get('/details/:deviceKey', async function (req, res) {
 
 api.get('/getpreferences', function (req, res) {
   try {
-    res.send({ 'user': 'shelly', 'password': '' });
+    const shellyFinder = req.app.locals.shellyFinder;
+    const prefs = shellyFinder.prefs;
+    res.send(prefs);
   } catch (err) {
     const response = `Getting preferences failed with error ${err.message}...}`;
     console.error('API:' + response);
@@ -124,9 +128,11 @@ api.get('/getpreferences', function (req, res) {
 
 api.post('/setpreferences', function (req, res) {
   try {
+    const shellyFinder = req.app.locals.shellyFinder;
+    // TODO write back the prefs
     res.json({ message: "Preferences updated" });
   } catch (err) {
-    const response = `Getting preferences failed with error ${err.message}...`;
+    const response = `Setting preferences failed with error ${err.message}...`;
     console.error('API:' + response);
     res.status(404).send(`<h2 style="color: darkred;">${response}</h2>`);
   }
@@ -134,6 +140,7 @@ api.post('/setpreferences', function (req, res) {
 
 api.get('/getpassword/:deviceKey', function (req, res) {
   try {
+    // TODO search for device specific credentials aother wise return global prefs value
     const shellylist = req.app.locals.shellylist;
     const shelly = shellylist[req.params.deviceKey];
     assert(_.isObject(shelly));
@@ -147,6 +154,7 @@ api.get('/getpassword/:deviceKey', function (req, res) {
 
 api.post('/setpassword/:deviceKey', function (req, res) {
   try {
+    // TODO if not match against global default create a device specific record
     const shellylist = req.app.locals.shellylist;
     const shelly = shellylist[req.params.deviceKey];
     assert(_.isObject(shelly));
@@ -167,7 +175,7 @@ api.get('/upgrade/:deviceKey', async function (req, res) {
     const shellylist = req.app.locals.shellylist;
     const shelly = shellylist[req.params.deviceKey];
     assert(_.isObject(shelly));
-    await shelly.callShelly('ota?update=true');
+    shelly.upgrade();
     res.send("OK");
   } catch (err) {
     const response = `Upgrade failed with error ${err.message}... for Shelly matching key:${req.params.deviceKey}`;

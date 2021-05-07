@@ -8,14 +8,15 @@ const compression = require('compression');
 const cors = require('cors');
 const proxy = require('express-http-proxy');
 const express = require('express');
+const authHeader = require('basic-auth-header');
 const SSE = require('express-sse');
 const morgan = require('morgan');
-const shellycoap = require('./shelly-coap.js')
-const authHeader = require('basic-auth-header');
+const ShellyFinder = require('./coapShellyList.js')
 
 const indexRouter = require('./routes/index');
 const apiRouter = require('./routes/api');
 const app = express();
+
 const sse = new SSE([], { isSerialized: false, initialEvent: 'shellysLoad' });
 
 // view engine setup
@@ -54,7 +55,7 @@ app.use(path.join(process.env.PREFIX, '/proxy/:deviceKey'), proxy(function (req,
     const shelly = app.locals.shellylist[deviceKey];
     if (shelly.auth) {
       console.warn('Need to add auth headers for this device');
-      proxyReqOpts.headers['Authorization'] = authHeader(process.env.SHELLYUSER, process.env.SHELLYPW);
+      proxyReqOpts.headers['Authorization'] = authHeader(shelly.shellyuser, shelly.shellypassword);
     }
     return proxyReqOpts;
   }
@@ -78,7 +79,7 @@ app.use(function (err, req, res, next) {
   res.render('error');
 });
 
-//app.locals.shellylist = await shellycoap(sse);
-shellycoap(app, sse);
+const shellycoap = new ShellyFinder(sse);
+shellycoap.start(app);
 
 module.exports = app;
