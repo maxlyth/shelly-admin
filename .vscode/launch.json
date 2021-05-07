@@ -27,7 +27,7 @@
       "file": "${workspaceFolder}/index.html"
     },
     {
-      "name": "Launch via NPM",
+      "name": "Launch NPM debug script",
       "request": "launch",
       "runtimeArgs": [
         "run-script",
@@ -41,12 +41,17 @@
     },
     {
       "name": "Electron",
+      "type": "node",
       "request": "launch",
       "runtimeArgs": [
         "run-script",
         "electron"
       ],
+    },
+    {
+      "name": "NPM Direct",
       "runtimeExecutable": "npm",
+      "request": "launch",
       "skipFiles": [
         "<node_internals>/**"
       ],

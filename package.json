@@ -14,12 +14,8 @@
     "make": "electron-forge make"
   },
   "dependencies": {
-    "acorn-globals": "^6.0.0",
     "assert": "^2.0.0",
-    "babel-cli": "^6.26.0",
-    "babylon": "^6.18.0",
     "basic-auth-header": "^1.0.1",
-    "bree": "^6.2.0",
     "coiot-coap": "^1.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.4",
@@ -31,36 +27,20 @@
     "got": "^9.6.0",
     "html-entities": "^2.3.2",
     "http-errors": "^1.6.3",
-    "humanize-duration": "^3.25.1",
     "javascript-time-ago": "^2.3.4",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
     "node-persist": "^3.1.0",
     "p-queue": "^7.1.0",
     "pollinator": "^0.3.1",
-    "pretty-bytes": "^1.0.4",
-    "pug": "^3.0.2",
-    "when": "^3.7.8"
+    "pretty-bytes": "^5.6.0",
+    "pug": "^3.0.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.14",
-    "@babel/core": "^7.13.16",
-    "@babel/eslint-parser": "^7.13.14",
-    "@babel/preset-env": "^7.13.15",
-    "@electron-forge/cli": "^6.0.0-beta.54",
-    "@electron-forge/maker-deb": "^6.0.0-beta.54",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.54",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
-    "@electron-forge/maker-zip": "^6.0.0-beta.54",
     "bootstrap-scss": "^4.6.0",
-    "debug": "^2.6.9",
-    "electron": "^12.0.5",
-    "eslint": "^7.25.0",
-    "eslint-plugin-lodash": "^7.2.0",
-    "node-sass": "^5.0.0",
-    "nodemon": "^2.0.7",
-    "webpack": "^5.30.0",
-    "webpack-cli": "^4.6.0"
+    "debug": "^4.3.1",
+    "electron": "^12.0.6",
+    "eslint-plugin-lodash": "^7.2.0"
   },
   "config": {
     "forge": {
