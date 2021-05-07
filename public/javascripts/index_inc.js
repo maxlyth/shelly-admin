@@ -257,33 +257,22 @@ $(document).ready(function () {
         "className": "text-nowrap text-truncate",
         "responsivePriority": 5,
         "render": function (data, _type, _row, _meta) {
-          let result = '';
           data ??= {};
-          result = data.curlong;
+          let result = data.curlong;
           if (_type == 'display') {
-            result = `<span data-toggle="tooltip" title="${data.curlong}">${data.curshort}</span>`;
-            let [currentCell, currentContent] = [null, null];
-            if (shellyTableObj) currentCell = shellyTableObj.cell(_meta.row, _meta.col);
-            if (currentCell) currentContent = currentCell.node();
-            if (currentContent) currentContent = $(currentContent);
-            if (currentContent) {
-              if ($('span[upgrading]', currentContent).length > 0) {
-                result = currentContent.html();
-                return result;
-              }
-              if ($('span[upgraded]', currentContent).length > 0) {
-                result = currentContent.html();
-                return result;
-              }
-            }
-            const deviceKey = _row['deviceKey'];
-            if (data.hasupgrade || false) {
+            let deviceKey = _row.deviceKey;
+            result = `<span class="text-muted">${data.curshort}</span>`;
+            if ((data.hasupgrade) || (data.status == 'pending')) {
               data.newlong ??= '';
               result = `<span onclick="handleShellyUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Start firmware upgrade" data-content="${data.newlong}">${data.curshort}&nbsp;&nbsp;`;
               result += `<i class="text-info fas fa-level-up-alt"></i></span>`;
-            } else {
+            }
+            if (data.status == 'idle') {
               result = `<span onclick="handleShellyCheckUpgrade(this, '${deviceKey}');" data-toggle="tooltip" title="Check for firmware upgrade">${data.curshort}&nbsp;`;
               result += `<i class="text-muted fas fa-sync-alt"></i></span>`;
+            }
+            if (data.status == 'updating') {
+              result = `<span>Upgrading…&nbsp;<i class="text-success fas fa-spinner fa-spin"></i></span>`;
             }
           }
           return result;
@@ -435,13 +424,13 @@ $(document).ready(function () {
     console.log(`SSE: open`);
   }, false);
   ssesource.addEventListener('shellysLoad', message => {
-    console.log('SSE: shellysLoad');
     const shellys = JSON.parse(message.data);
+    console.log(`SSE: shellysLoad with ${shellys.length} devices`);
     shellyTableObj.clear();
     for (const [, shelly] of Object.entries(shellys)) {
       shellyTableObj.row.add(shelly);
     }
-    shellyTableObj.one('draw', function () { $('#connectingOverlay').delay(250).fadeOut(400, function () { $('#connectingOverlay').addClass('invisible') }); });
+    shellyTableObj.one('draw', function () { $('#connectingOverlay').delay(250).fadeOut(400, function () { $('#connectingOverlay').addClass('invisible').fadeTo(0, 1) }); });
     shellyTableObj.columns.adjust().draw();
   }, false);
   ssesource.addEventListener('shellyUpdate', message => {
@@ -454,20 +443,20 @@ $(document).ready(function () {
       if (differences.length === 0) {
         console.log(`SSE: shellyUpdate no changes for ${devKey}`);
       } else {
-        let noVisibleCols = true;
-        for (let col in differences) {
-          if (existingRow.columns(col + ':name')[0].length > 0) {
-            // eslint-disable-next-line no-unused-vars
-            noVisibleCols = false;
-            break;
-          }
-        }
-        if (noVisibleCols == false) {
+        console.log(`SSE: shellyUpdate data differs for ${devKey}`);
+        existingRow.data(shelly);
+        let noVisibleCols = false;
+        //let noVisibleCols = true;
+        //for (let col in differences) {
+        //  if (existingRow.columns(col + ':name')[0].length > 0) {
+        //    // eslint-disable-next-line no-unused-vars
+        //    noVisibleCols = false;
+        //    break;
+        //  }
+        //}
+        if (noVisibleCols === false) {
           //console.log(`SSE: shellyUpdate including visible columns for ${devKey}`);
-          existingRow.data(shelly).draw();
-        } else {
-          //console.log(`SSE: shellyUpdate only for invisible columns for ${devKey}`);
-          existingRow.data(shelly);
+          existingRow.draw();
         }
       }
     } else {
@@ -496,66 +485,33 @@ $(document).ready(function () {
       existingRow.remove().draw();
     }
   }, false);
-  ssesource.addEventListener('error', message => {
-    console.log('SSE: error');
+  ssesource.addEventListener('error', event => {
+    switch (event.target.readyState) {
+      case EventSource.CONNECTING:
+        $('#connectingOverlay').removeClass('invisible');
+        $('#offlineOverlay').addClass('invisible');
+        console.log('SSE Reconnecting...');
+        break;
+      case EventSource.CLOSED:
+        $('#offlineOverlay').removeClass('invisible');
+        $('#connectingOverlay').addClass('invisible');
+        console.log('SSE Connection failed, will not reconnect');
+        break;
+    }
   }, false);
-});
 
-function pollUpgradeTimer() {
-  var element = this.element;
-  var deviceKey = this.deviceKey;
-  var tableCell = this.tableCell;
-  var originalContent = this.originalContent;
-  var startTime = this.startTime;
-  var curStatus = this.curStatus;
-  $.ajax({ url: "api/upgradestatus/" + deviceKey })
-    .done(function (data) {
-      console.info(`Got upgrade status of ${data} for ${deviceKey}`);
-      if (data == 'idle') {
-        tableCell.html(`<span upgraded><i class="text-success fas fa-check-circle"></i>&nbsp;Success!</span>`);
-        setTimeout(function () {
-          $('[upgraded]', tableCell).removeAttr('upgraded');
-          $.ajax({
-            url: "api/shelly/" + deviceKey
-          }).done(function (data) {
-            shellyTableObj.row(tableCell).data(data).draw();
-          })
-        }, 15000);
-        return;
-      }
-      if ((Date.now() - startTime) > 60000) {
-        tableCell.html(originalContent);
-        return;
-      }
-      if (data != curStatus) {
-        curStatus = data;
-        tableCell.html(`<span upgrading><i class="text-success fas fa-spinner fa-spin"></i>&nbsp;${data}</span>`);
-      }
-      setTimeout(pollUpgradeTimer.bind({ element, deviceKey, tableCell, originalContent, startTime, curStatus }), 1500);
-    })
-    .fail(function (data) {
-      console.warning(`upgradestatus failed with ${data} for ${deviceKey}`);
-      if ((Date.now() - startTime) > 60000) {
-        tableCell.html(originalContent);
-      } else {
-        setTimeout(pollUpgradeTimer.bind({ element, deviceKey, tableCell, originalContent, startTime, curStatus }), 1500);
-      }
-    });
-}
+});
 
 // eslint-disable-next-line no-unused-vars
 function handleShellyUpgrade(element, deviceKey) {
   console.info("Start firmware upgrade for " + deviceKey);
   let tableCell = $(element).parent();
   let originalContent = tableCell.html();
-  let startTime = Date.now();
-  let curStatus = 'Requesting…';
   $('[data-toggle="tooltip"]', tableCell).tooltip('hide');
-  tableCell.html(`<span upgrading>${curStatus}</span>`);
+  tableCell.html(`<span class="text-muted">Request…&nbsp;<i class="fas fa-spinner fa-spin"></i></span>`);
   $.ajax({ url: "api/upgrade/" + deviceKey })
     .done(function (data) {
       console.info("Requested firmware upgrade for " + deviceKey);
-      setTimeout(pollUpgradeTimer.bind({ element, deviceKey, tableCell, originalContent, startTime, curStatus }), 1500);
     })
     .fail(function (data) {
       tableCell.html(originalContent);
